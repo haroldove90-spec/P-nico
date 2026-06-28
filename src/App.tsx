@@ -31,7 +31,12 @@ import {
   User,
   FileText,
   TrendingUp,
-  LogOut
+  LogOut,
+  Camera,
+  Mic,
+  Lock,
+  Unlock,
+  Key
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -1297,6 +1302,53 @@ export default function App() {
   const [newContactName, setNewContactName] = useState('');
   const [newContactPhone, setNewContactPhone] = useState('');
 
+  // --- NUEVOS ESTADOS DE SEGURIDAD CIUDADANA ---
+  // 1. Registro e Identidad Segura
+  const [curp, setCurp] = useState(() => localStorage.getItem('hidalgo_curp') || '');
+  const [phone, setPhone] = useState(() => localStorage.getItem('hidalgo_phone') || '');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(() => localStorage.getItem('hidalgo_otp_verified') === 'true');
+  const [medicalName, setMedicalName] = useState(() => localStorage.getItem('hidalgo_med_name') || '');
+  const [medicalAge, setMedicalAge] = useState(() => localStorage.getItem('hidalgo_med_age') || '');
+  const [medicalBlood, setMedicalBlood] = useState(() => localStorage.getItem('hidalgo_med_blood') || 'O+');
+  const [medicalAllergies, setMedicalAllergies] = useState(() => localStorage.getItem('hidalgo_med_allergies') || 'Ninguna');
+  const [identitySaved, setIdentitySaved] = useState(() => localStorage.getItem('hidalgo_identity_saved') === 'true');
+
+  // 2. Acompáñame Preventivo con Temporizador
+  const [escortTimerMinutes, setEscortTimerMinutes] = useState(15);
+  const [escortTimeLeft, setEscortTimeLeft] = useState(0); // en segundos
+  const [escortTimerActive, setEscortTimerActive] = useState(false);
+  const [escortPin, setEscortPin] = useState(() => localStorage.getItem('hidalgo_escort_pin') || '1234');
+  const [escortPinInput, setEscortPinInput] = useState('');
+  const [showPinVerification, setShowPinVerification] = useState(false);
+  const [pinError, setPinError] = useState(false);
+
+  // 3. Caja Negra
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [isTakingPhotos, setIsTakingPhotos] = useState(false);
+  const [cameraShots, setCameraShots] = useState<string[]>([]);
+
+  // 6. Activación Discreta (Física)
+  const [discreteEnabled, setDiscreteEnabled] = useState(() => localStorage.getItem('hidalgo_discrete_enabled') === 'true');
+  const [powerClicks, setPowerClicks] = useState(0);
+  const [lastPowerClickTime, setLastPowerClickTime] = useState(0);
+
+  // --- ESTADOS EXCLUSIVOS ROL 2 AGENTE OPERATIVO / POLICÍA ---
+  const [agentCoverageRadius, setAgentCoverageRadius] = useState<number>(5); // X km para geocerca
+  const [victimDistance, setVictimDistance] = useState<number>(3.2); // Distancia a la víctima
+  const [victimLat, setVictimLat] = useState<number>(20.10123);
+  const [victimLng, setVictimLng] = useState<number>(-98.75945);
+  const [patrolLat, setPatrolLat] = useState<number>(20.09841);
+  const [patrolLng, setPatrolLng] = useState<number>(-98.76123);
+  const [proximityAlertActive, setProximityAlertActive] = useState<boolean>(false);
+  const [acceptedAlertTime, setAcceptedAlertTime] = useState<string | null>(null);
+  const [lastTelemetryTx, setLastTelemetryTx] = useState<string | null>(null);
+  const [victimMoving, setVictimMoving] = useState<boolean>(true);
+  const [reportClassification, setReportClassification] = useState<string>('Incidente Controlado');
+  const [reportPhoto, setReportPhoto] = useState<string | null>(null);
+  const [isTakingReportPhoto, setIsTakingReportPhoto] = useState<boolean>(false);
+
   // Logs del Centro de Emergencias C4 Hidalgo
   const [logs, setLogs] = useState<LogEntry[]>([
     { time: '12:51:33', type: 'info', message: 'Sistema de Enlace Ciudadano Hidalgo C5i en línea.' },
@@ -1319,17 +1371,47 @@ export default function App() {
     return () => clearInterval(gpsInterval);
   }, []);
 
+  // Vibración háptica simulada
+  const vibrateDevice = (pattern: number[]) => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(pattern);
+      }
+    } catch (e) {
+      console.log("Haptic feedback error: ", e);
+    }
+  };
+
   // Simulación de cuenta regresiva para el Botón de Pánico
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (panicActive && countdown > 0) {
       timer = setTimeout(() => {
         setCountdown(countdown - 1);
+        
+        // Transmisión de geolocalización vía WebSocket de bajo consumo (simulada)
         addLog({
           time: new Date().toLocaleTimeString(),
           type: 'warning',
-          message: `Transmitiendo ráfaga de datos en ${countdown - 1}s... GPS: ${simulatedLat.toFixed(5)}°, ${simulatedLng.toFixed(5)}°`
+          message: `📡 [WEBSOCKET] Tx Telemetría: {"lat": ${simulatedLat.toFixed(5)}, "lng": ${simulatedLng.toFixed(5)}, "battery": ${batteryLevel}%, "precision": "2m", "audio_active": true, "event": "LIVE_PANIC_PING"}`
         });
+
+        // Simulación de ráfagas de cámara en segundo plano (Caja Negra)
+        if (countdown === 4) {
+          setCameraShots(prev => [...prev, '📸 Ráfaga frontal (13:45:01): Ángulo amplio - Rostro detectado y encriptado en AES-256']);
+          addLog({
+            time: new Date().toLocaleTimeString(),
+            type: 'info',
+            message: '🔒 [CAJA NEGRA] Ráfaga #1 enviada y encriptada directo al servidor C5i en la nube.'
+          });
+        } else if (countdown === 2) {
+          setCameraShots(prev => [...prev, '📸 Ráfaga trasera (13:45:03): Entorno oscuro - Captura ruidosa pero legible subida sin registro local']);
+          addLog({
+            time: new Date().toLocaleTimeString(),
+            type: 'info',
+            message: '🔒 [CAJA NEGRA] Ráfaga #2 cargada exitosamente. Sin residuos en la galería del dispositivo.'
+          });
+        }
         
         // Efecto de sonido de bip si está activo
         if (soundEnabled) {
@@ -1358,29 +1440,145 @@ export default function App() {
         stopSiren();
       }
     };
-  }, [panicActive, countdown]);
+  }, [panicActive, countdown, simulatedLat, simulatedLng, batteryLevel]);
+
+  // Temporizador de Acompáñame Preventivo
+  useEffect(() => {
+    let escortInterval: NodeJS.Timeout;
+    if (escortTimerActive && escortTimeLeft > 0) {
+      escortInterval = setInterval(() => {
+        setEscortTimeLeft(prev => {
+          if (prev <= 1) {
+            setEscortTimerActive(false);
+            // TRIGGER EMERGENCY S.O.S. AUTOMATICALLY!
+            setPanicActive(true);
+            setCountdown(5);
+            setIsRecordingAudio(true);
+            setIsTakingPhotos(true);
+            
+            addLog({
+              time: new Date().toLocaleTimeString(),
+              type: 'error',
+              message: '🚨 [ACOMPÁÑAME] ALERTA CRÍTICA: Temporizador expirado sin PIN de desactivación. S.O.S automático emitido al C5i.'
+            });
+
+            // Enviar SMS en paralelo a todos los contactos de la red de confianza
+            contacts.forEach(c => {
+              addLog({
+                time: new Date().toLocaleTimeString(),
+                type: 'warning',
+                message: `💬 [SMS AUTOMÁTICO] Enviado a ${c.name} (${c.phone}): "¡ALERTA EN RUTA! Mi trayecto preventivo expiró y no ingresé mi PIN. Auxilio. GPS: https://maps.google.com/?q=${simulatedLat.toFixed(5)},${simulatedLng.toFixed(5)}"`
+              });
+            });
+
+            vibrateDevice([1000, 500, 1000]);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(escortInterval);
+  }, [escortTimerActive, escortTimeLeft, contacts, simulatedLat, simulatedLng]);
+
+  // --- EFECTOS DE CONTROL OPERATIVO & TELEMETRÍA (ROL 2 AGENTE) ---
+  useEffect(() => {
+    let telemetryInterval: NodeJS.Timeout;
+    if (hubAgentActive && hubRole === 'agente') {
+      telemetryInterval = setInterval(() => {
+        const timestamp = new Date().toLocaleTimeString();
+        setLastTelemetryTx(timestamp);
+        
+        // Simular pequeño desplazamiento de patrullaje
+        setPatrolLat(prev => prev + (Math.random() - 0.5) * 0.0001);
+        setPatrolLng(prev => prev + (Math.random() - 0.5) * 0.0001);
+
+        addLog({
+          time: timestamp,
+          type: 'info',
+          message: `📡 [TELEMETRÍA PATRULLA] Tx ubicación Unidad Hidalgo 04: {"lat": ${patrolLat.toFixed(5)}, "lng": ${patrolLng.toFixed(5)}, "status": "Activo", "signal": "Excelente"}`
+        });
+      }, 5000);
+    }
+    return () => clearInterval(telemetryInterval);
+  }, [hubAgentActive, hubRole, patrolLat, patrolLng]);
+
+  // --- EFECTO DE SEGUIMIENTO EN VIVO & RECALCULACIÓN DE RUTA ---
+  useEffect(() => {
+    let trackingInterval: NodeJS.Timeout;
+    if (hubAlertAccepted && victimMoving && hubRole === 'agente') {
+      trackingInterval = setInterval(() => {
+        const timestamp = new Date().toLocaleTimeString();
+        
+        // Simular que la víctima se desplaza (ej. corriendo o en auto)
+        const dLat = (Math.random() - 0.5) * 0.00015;
+        const dLng = (Math.random() - 0.5) * 0.00015;
+        setVictimLat(prev => prev + dLat);
+        setVictimLng(prev => prev + dLng);
+
+        // Recalcular la distancia Euclidiana simplificada (en km aprox, 1 grado ~ 111 km)
+        setVictimDistance(() => {
+          const latDiff = (patrolLat - (victimLat + dLat)) * 111;
+          const lngDiff = (patrolLng - (victimLng + dLng)) * 111;
+          const newDist = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
+          return parseFloat(newDist.toFixed(2));
+        });
+
+        addLog({
+          time: timestamp,
+          type: 'warning',
+          message: `🛰️ [SEGUIMIENTO GPS] Desplazamiento en vivo de la víctima detectado. Recalculando ruta óptima hacia nuevas coordenadas en tiempo real...`
+        });
+      }, 6000);
+    }
+    return () => clearInterval(trackingInterval);
+  }, [hubAlertAccepted, victimMoving, hubRole, patrolLat, patrolLng, victimLat, victimLng]);
 
   const addLog = (log: LogEntry) => {
     setLogs(prev => [log, ...prev].slice(0, 50));
   };
 
   const handlePanicToggle = () => {
+    // Feedback háptico fuerte
+    vibrateDevice([500, 100, 500]);
+
     if (panicActive) {
       setPanicActive(false);
       setCountdown(5);
       stopSiren();
+      setIsRecordingAudio(false);
+      setIsTakingPhotos(false);
+      setCameraShots([]);
       addLog({
         time: new Date().toLocaleTimeString(),
         type: 'info',
-        message: 'Alerta cancelada por el usuario. Estado: Protegido restablecido.'
+        message: 'Alerta cancelada por el usuario. Estado: Protegido restablecido. Grabación de Caja Negra detenida.'
       });
     } else {
       setPanicActive(true);
+      setIsRecordingAudio(true);
+      setIsTakingPhotos(true);
+      setCameraShots(['📸 Ráfaga de Activación (13:45:00): Foto de ráfaga inicial subida encriptada.']);
       addLog({
         time: new Date().toLocaleTimeString(),
         type: 'warning',
         message: '⚠️ BOTÓN DE PÁNICO PRESIONADO. Iniciando protocolo de emergencia de 5s.'
       });
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        type: 'info',
+        message: '🎙️ [CAJA NEGRA] Activación de audio ambiente en segundo plano iniciada. Grabando de forma silenciosa...'
+      });
+
+      // Enviar SMS inmediato en paralelo con la alerta C4
+      contacts.forEach(c => {
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          type: 'warning',
+          message: `💬 [SMS AUTOMÁTICO] Alerta enviada a ${c.name} (${c.phone}): "¡AUXILIO S.O.S! He presionado mi botón de emergencia Hidalgo Alerta. Mi ubicación actual: https://maps.google.com/?q=${simulatedLat.toFixed(5)},${simulatedLng.toFixed(5)}"`
+        });
+      });
+
       if (soundEnabled) {
         playBeep(440, 0.3);
       }
@@ -1388,21 +1586,153 @@ export default function App() {
   };
 
   const handleCompanionToggle = () => {
-    const newState = !companionActive;
-    setCompanionActive(newState);
-    if (newState) {
+    if (escortTimerActive) {
+      // Prompt for PIN to deactivate
+      setShowPinVerification(true);
+    } else {
+      // Activate with defined minutes
+      setEscortTimeLeft(escortTimerMinutes * 60);
+      setEscortTimerActive(true);
+      setCompanionActive(true);
       addLog({
         time: new Date().toLocaleTimeString(),
         type: 'success',
-        message: `Servicio 'Acompáñame' activado. Monitoreo pasivo iniciado en Pachuca Centro.`
+        message: `Servicio 'Acompáñame' iniciado. Ruta protegida activa por ${escortTimerMinutes} min. Monitoreo satelital C5i activo.`
       });
-    } else {
+    }
+  };
+
+  const handlePinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (escortPinInput === escortPin) {
+      setEscortTimerActive(false);
+      setCompanionActive(false);
+      setShowPinVerification(false);
+      setEscortPinInput('');
+      setPinError(false);
       addLog({
         time: new Date().toLocaleTimeString(),
         type: 'info',
-        message: `Servicio 'Acompáñame' desactivado de forma segura.`
+        message: `Servicio 'Acompáñame' desactivado exitosamente mediante PIN de seguridad.`
+      });
+    } else {
+      setPinError(true);
+      vibrateDevice([100, 50, 100]);
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        type: 'error',
+        message: `⚠️ [ACOMPÁÑAME] Código PIN incorrecto. Intento de desactivación denegado.`
       });
     }
+  };
+
+  // --- NUEVOS CONTROLADORES DE SEGURIDAD CIUDADANA ---
+  const handlePhysicalPowerClick = () => {
+    if (!discreteEnabled) {
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        type: 'warning',
+        message: '⚠️ [ACTIVACIÓN FÍSICA] El modo discreto está desactivado. Habilítalo arriba para simular.'
+      });
+      return;
+    }
+
+    const now = Date.now();
+    let clicks = powerClicks;
+
+    // Si pasó más de 3 segundos desde el último clic, reiniciar contador
+    if (now - lastPowerClickTime > 3000) {
+      clicks = 1;
+    } else {
+      clicks += 1;
+    }
+
+    setPowerClicks(clicks);
+    setLastPowerClickTime(now);
+
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      type: 'info',
+      message: `🔌 [BOTÓN FÍSICO] Clic detectado (${clicks}/3).`
+    });
+
+    if (clicks >= 3) {
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        type: 'error',
+        message: '🚨 [ACTIVACIÓN FÍSICA] ¡Triple clic detectado! Activando S.O.S de emergencia silencioso.'
+      });
+      setPowerClicks(0);
+      if (!panicActive) {
+        handlePanicToggle();
+      }
+    } else {
+      vibrateDevice([80]);
+    }
+  };
+
+  const handleSendOTP = () => {
+    if (!phone || phone.length < 10) {
+      alert("Por favor, introduce un número de teléfono válido a 10 dígitos.");
+      return;
+    }
+    setOtpSent(true);
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      type: 'info',
+      message: `💬 [SMS OTP] Enviando código de validación de 4 dígitos al número ${phone}...`
+    });
+    // Simular recepción automática en log
+    setTimeout(() => {
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        type: 'success',
+        message: `📲 [SMS RECIBIDO] Tu código de verificación de Hidalgo Alerta es: 1910`
+      });
+    }, 1500);
+  };
+
+  const handleVerifyOTP = () => {
+    if (otpCode === '1910') {
+      setOtpVerified(true);
+      localStorage.setItem('hidalgo_phone', phone);
+      localStorage.setItem('hidalgo_otp_verified', 'true');
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        type: 'success',
+        message: `✓ [REGISTRO] Teléfono móvil verificado correctamente mediante OTP.`
+      });
+    } else {
+      vibrateDevice([100, 50, 100]);
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        type: 'error',
+        message: `⚠️ [REGISTRO] Código OTP incorrecto. Intenta con "1910" (simulado).`
+      });
+    }
+  };
+
+  const handleSaveIdentity = () => {
+    if (!curp || curp.length < 18) {
+      alert("Por favor, introduce una CURP válida de 18 caracteres.");
+      return;
+    }
+    if (!otpVerified) {
+      alert("Debes verificar tu número de teléfono con el código OTP antes de guardar.");
+      return;
+    }
+    localStorage.setItem('hidalgo_curp', curp);
+    localStorage.setItem('hidalgo_med_name', medicalName);
+    localStorage.setItem('hidalgo_med_age', medicalAge);
+    localStorage.setItem('hidalgo_med_blood', medicalBlood);
+    localStorage.setItem('hidalgo_med_allergies', medicalAllergies);
+    localStorage.setItem('hidalgo_identity_saved', 'true');
+    setIdentitySaved(true);
+    addLog({
+      time: new Date().toLocaleTimeString(),
+      type: 'success',
+      message: `🔒 [REGISTRO] Ficha médica y CURP enlazadas con éxito al C5i. Identidad Segura Activada.`
+    });
   };
 
   // Sonidos simulados por Web Audio API
@@ -1699,156 +2029,591 @@ export default function App() {
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start w-full"
+                className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full font-sans text-slate-200"
               >
-                {/* LEFT CORE: SOS BUTTON TRIGGER */}
-                <div className="md:col-span-6 bg-[#000000]/80 border border-white/[0.08] p-8 rounded-[28px] backdrop-blur-md shadow-xl flex flex-col items-center justify-center min-h-[460px] relative overflow-hidden">
+                {/* LEFT COLUMN: SOS AND LIVE SYSTEM EMERGENCIES (6 columns wide) */}
+                <div className="lg:col-span-6 space-y-6">
                   
-                  {/* Realtime GPS Satelital telemetry */}
-                  <div className="absolute top-4 left-6 right-6 flex items-center justify-between">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                      <span className="relative flex h-2 w-2">
-                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${panicActive ? 'bg-red-500' : 'bg-emerald-400'}`} />
-                        <span className={`relative inline-flex rounded-full h-2 w-2 ${panicActive ? 'bg-red-500' : 'bg-emerald-400'}`} />
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-200">
-                        {panicActive ? `ALERTA ACTIVA (${countdown}s)` : 'Enlace Conectado'}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-500 tracking-wider">SATELLITE GPS ACTIVE</span>
-                  </div>
-
-                  {/* Concentric Pulsing shockwaves */}
-                  <div className="flex-1 flex flex-col justify-center items-center py-12 relative w-full">
-                    <AnimatePresence>
-                      {panicActive && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <motion.div 
-                            initial={{ scale: 0.8, opacity: 0.6 }}
-                            animate={{ scale: 1.8, opacity: 0 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ repeat: Infinity, duration: 2, ease: "easeOut" }}
-                            className="absolute w-56 aspect-square rounded-full border-2 border-red-500/30 bg-red-500/[0.02]"
-                          />
-                          <motion.div 
-                            initial={{ scale: 0.8, opacity: 0.4 }}
-                            animate={{ scale: 2.3, opacity: 0 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ repeat: Infinity, duration: 2.5, ease: "easeOut", delay: 0.5 }}
-                            className="absolute w-56 aspect-square rounded-full border border-red-500/10"
-                          />
-                        </div>
-                      )}
-                    </AnimatePresence>
-
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handlePanicToggle}
-                      className={`relative w-48 aspect-square rounded-full flex flex-col items-center justify-center border-4 shadow-3xl cursor-pointer transition-all duration-300 ${
-                        panicActive 
-                          ? 'bg-gradient-to-br from-red-600 to-red-500 border-white/20 shadow-[0_0_50px_rgba(239,68,68,0.5)] animate-pulse' 
-                          : 'bg-[#1e0707] border-red-500/30 hover:border-red-500/50 hover:bg-[#2e0909] shadow-[0_0_35px_rgba(239,68,68,0.15)]'
-                      }`}
-                    >
-                      <div className="flex flex-col items-center justify-center p-4 text-center select-none">
-                        {panicActive ? (
-                          <>
-                            <ShieldAlert className="w-14 h-14 text-white animate-bounce" />
-                            <span className="text-3xl font-black text-white mt-1">
-                              {countdown > 0 ? countdown : 'C5i'}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <Shield className="w-14 h-14 text-red-500" />
-                            <span className="text-3xl font-black text-white mt-1">S.O.S.</span>
-                          </>
-                        )}
-                        <span className="text-[10px] font-black tracking-widest text-white/80 uppercase mt-3">
-                          {panicActive ? 'Presiona para Cancelar' : 'PRESIONAR ENLACE'}
+                  {/* LEFT CORE: SOS BUTTON TRIGGER */}
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-xl flex flex-col items-center justify-between min-h-[440px] relative overflow-hidden">
+                    
+                    {/* Realtime GPS Satelital telemetry */}
+                    <div className="w-full flex items-center justify-between z-10">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20">
+                        <span className="relative flex h-2 w-2">
+                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${panicActive ? 'bg-red-500' : 'bg-red-400'}`} />
+                          <span className={`relative inline-flex rounded-full h-2 w-2 ${panicActive ? 'bg-red-500' : 'bg-red-500'}`} />
+                        </span>
+                        <span className="text-[10px] font-black tracking-wider text-red-400">
+                          {panicActive ? `ALERTA ACTIVA (${countdown}s)` : 'ENLACE DE EMERGENCIA C5i'}
                         </span>
                       </div>
-                    </motion.button>
-                  </div>
-
-                  {/* Satellite Coordinates and telemetry logs */}
-                  <div className="w-full text-center space-y-1 mt-auto pt-4 border-t border-white/[0.04]">
-                    <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-semibold">
-                      <MapPin className="w-3.5 h-3.5 text-red-400" />
-                      <span>Ubicación actual: {simulatedLat.toFixed(5)}°, {simulatedLng.toFixed(5)}° (Pachuca Centro)</span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[8px] font-bold border border-emerald-500/20">GPS: EN LÍNEA</span>
+                      </div>
                     </div>
-                    <p className="text-[9px] text-slate-500 font-medium">Batería del dispositivo: {batteryLevel}% • Precisión: 2 metros</p>
-                  </div>
-                </div>
 
-                {/* RIGHT CORE: LIVE SERVICES (ACOMPAÑAME & CONTACTS) */}
-                <div className="md:col-span-6 space-y-6">
-                  
-                  {/* service 1: Acompáñame Live escort */}
-                  <div className="bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-lg space-y-4">
+                    {/* Concentric Pulsing shockwaves and Giant SOS Button */}
+                    <div className="flex-1 flex flex-col justify-center items-center py-6 relative w-full z-10">
+                      <AnimatePresence>
+                        {panicActive && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <motion.div 
+                              initial={{ scale: 0.8, opacity: 0.6 }}
+                              animate={{ scale: 2.2, opacity: 0 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ repeat: Infinity, duration: 1.5, ease: "easeOut" }}
+                              className="absolute w-52 aspect-square rounded-full border-2 border-red-500 bg-red-500/[0.03] shadow-[0_0_30px_rgba(239,68,68,0.4)]"
+                            />
+                            <motion.div 
+                              initial={{ scale: 0.8, opacity: 0.4 }}
+                              animate={{ scale: 2.8, opacity: 0 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ repeat: Infinity, duration: 2, ease: "easeOut", delay: 0.3 }}
+                              className="absolute w-52 aspect-square rounded-full border border-red-500/40"
+                            />
+                          </div>
+                        )}
+                      </AnimatePresence>
+
+                      <motion.button
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handlePanicToggle}
+                        className={`relative w-44 aspect-square rounded-full flex flex-col items-center justify-center border-4 shadow-3xl cursor-pointer transition-all duration-300 ${
+                          panicActive 
+                            ? 'bg-gradient-to-br from-red-600 to-red-500 border-white/20 shadow-[0_0_50px_rgba(239,68,68,0.7)] animate-pulse' 
+                            : 'bg-[#1e0707] border-red-500/40 hover:border-red-500 hover:bg-[#2e0909] shadow-[0_0_35px_rgba(239,68,68,0.3)]'
+                        }`}
+                      >
+                        <div className="flex flex-col items-center justify-center p-4 text-center select-none">
+                          {panicActive ? (
+                            <>
+                              <ShieldAlert className="w-12 h-12 text-white animate-bounce" />
+                              <span className="text-3xl font-black text-white mt-1">
+                                {countdown > 0 ? countdown : 'C5i'}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Shield className="w-12 h-12 text-red-500" />
+                              <span className="text-3xl font-black text-white mt-1">S.O.S.</span>
+                            </>
+                          )}
+                          <span className="text-[9px] font-black tracking-widest text-white/90 uppercase mt-2">
+                            {panicActive ? 'PRESIONA PARA CANCELAR' : 'PRESIONAR 3 SEGUNDOS'}
+                          </span>
+                        </div>
+                      </motion.button>
+                    </div>
+
+                    {/* Satellite Coordinates and telemetry status */}
+                    <div className="w-full text-center space-y-1.5 pt-4 border-t border-white/[0.04] z-10">
+                      <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-300 font-semibold">
+                        <MapPin className="w-3.5 h-3.5 text-red-500" />
+                        <span>Lat: {simulatedLat.toFixed(6)}°, Lng: {simulatedLng.toFixed(6)}° (Hidalgo)</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-3 text-[9px] text-slate-400">
+                        <span>BATERÍA: {batteryLevel}%</span>
+                        <span>•</span>
+                        <span>PRECISIÓN GPS: 1.8 metros</span>
+                        <span>•</span>
+                        <span className="inline-flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          📡 WEBSOCKET: ACTIVO
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. CAJA NEGRA DE EVIDENCIA (Grabación Silenciosa & Ráfagas) */}
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-5 rounded-[24px] backdrop-blur-md space-y-4">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
-                          <Navigation className="w-5 h-5" />
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/25 flex items-center justify-center text-red-400">
+                          <Camera className="w-4 h-4" />
                         </div>
                         <div>
-                          <h3 className="text-sm font-bold text-white">Servicio de Escolta "Acompáñame"</h3>
-                          <p className="text-[10px] text-slate-400">Monitoreo activo y continuo de ruta en C5i</p>
+                          <h4 className="text-xs font-black text-white">Caja Negra de Evidencia (Grabación Silenciosa)</h4>
+                          <p className="text-[10px] text-slate-400">Ráfagas multimedia y audio ambiente cifrados en la nube</p>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold ${panicActive ? 'bg-red-500/10 text-red-400 animate-pulse border border-red-500/20' : 'bg-slate-900 text-slate-500'}`}>
+                        {panicActive ? 'CAPTURA EN CURSO' : 'ESPERANDO SOS'}
+                      </span>
+                    </div>
+
+                    {panicActive ? (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="space-y-3 pt-1"
+                      >
+                        {/* Audio Waveform simulator */}
+                        <div className="bg-red-950/20 border border-red-500/20 rounded-xl p-3 flex flex-col gap-2">
+                          <div className="flex items-center justify-between text-[10px] text-red-400 font-bold">
+                            <span className="flex items-center gap-1.5">
+                              <Mic className="w-3.5 h-3.5 animate-pulse" />
+                              Grabación de Audio Ambiente Activa
+                            </span>
+                            <span>Cifrado: AES-256</span>
+                          </div>
+                          <div className="h-8 flex items-center justify-center gap-1 px-4">
+                            {[0.4, 0.9, 0.5, 0.7, 0.3, 0.8, 0.6, 0.95, 0.5, 0.8, 0.35, 0.75, 0.5, 0.9, 0.4].map((h, i) => (
+                              <motion.div 
+                                key={i}
+                                animate={{ height: [`${h * 20}%`, `${h * 100}%`, `${h * 20}%`] }}
+                                transition={{ repeat: Infinity, duration: 0.6 + (i % 3) * 0.2, ease: "easeInOut" }}
+                                className="w-1 bg-red-500 rounded-full"
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Sequenced encrypted camera bursts logs */}
+                        <div className="space-y-2">
+                          <span className="text-[10px] font-black tracking-wider text-slate-400 uppercase">RÁFAGAS EN SEGUNDO PLANO (CÁMARA DEL DISPOSITIVO)</span>
+                          <div className="space-y-1.5">
+                            {cameraShots.map((shot, idx) => (
+                              <div key={idx} className="bg-slate-950/60 border border-white/[0.04] p-2.5 rounded-lg flex items-center justify-between text-[10px]">
+                                <div className="flex items-center gap-2 text-slate-300">
+                                  <Lock className="w-3 h-3 text-emerald-400" />
+                                  <span>{shot}</span>
+                                </div>
+                                <span className="text-[8px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">ENCRIPTADO & SUBIDO</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <div className="text-center py-4 text-xs text-slate-500 bg-slate-950/40 rounded-xl border border-white/[0.02]">
+                        Al activarse la alerta SOS, se encenderá el micrófono y se capturarán fotografías secuenciales sin encender la pantalla. Nada se guardará en la galería local para proteger tu seguridad física.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 6. ACTIVACIÓN DISCRETA (Physical triple press click simulation) */}
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-5 rounded-[24px] backdrop-blur-md space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
+                          <Smartphone className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-white">Activación Física Discreta</h4>
+                          <p className="text-[10px] text-slate-400">Activa el S.O.S presionando 3 veces el botón físico</p>
                         </div>
                       </div>
                       
                       <button 
-                        onClick={handleCompanionToggle}
-                        className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-300 flex items-center cursor-pointer ${companionActive ? 'bg-[#00FF88]' : 'bg-white/10'}`}
+                        onClick={() => {
+                          const val = !discreteEnabled;
+                          setDiscreteEnabled(val);
+                          localStorage.setItem('hidalgo_discrete_enabled', String(val));
+                        }}
+                        className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-300 flex items-center cursor-pointer ${discreteEnabled ? 'bg-[#00FF88]' : 'bg-white/10'}`}
                       >
-                        <div className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform duration-300 ${companionActive ? 'translate-x-5' : 'translate-x-0'}`} />
+                        <div className={`w-4 h-4 rounded-full bg-slate-950 shadow transform transition-transform duration-300 ${discreteEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
                       </button>
                     </div>
 
-                    {/* Interactive Escort visual timeline tracker */}
-                    <div className="space-y-3.5">
-                      <div 
-                        onClick={handleCompanionToggle}
-                        className="relative h-12 bg-white/[0.04] hover:bg-white/[0.07] rounded-xl flex items-center px-2 cursor-pointer overflow-hidden transition-all border border-white/[0.04]"
-                      >
-                        <div className={`absolute top-0 bottom-0 left-0 bg-amber-500/10 rounded-xl transition-all duration-500 ${companionActive ? 'w-full' : 'w-[15%]'}`} />
-                        <div className={`w-8 h-8 rounded-lg bg-white flex items-center justify-center text-slate-900 shadow-md transition-all duration-500 ${companionActive ? 'translate-x-[260px] sm:translate-x-[360px] md:translate-x-[400px] lg:translate-x-[480px]' : 'translate-x-0'}`}>
-                          <Navigation className="w-4 h-4 text-slate-900 transform rotate-45" />
+                    <div className="bg-slate-950/60 p-3.5 rounded-xl border border-white/[0.03] space-y-3">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400">Simulador de Botón de Encendido Físico:</span>
+                        <div className="flex gap-1.5 items-center">
+                          <span className={`w-2 h-2 rounded-full ${powerClicks >= 1 ? 'bg-red-500 animate-ping' : 'bg-slate-800'}`} />
+                          <span className={`w-2 h-2 rounded-full ${powerClicks >= 2 ? 'bg-red-500 animate-ping' : 'bg-slate-800'}`} />
+                          <span className={`w-2 h-2 rounded-full ${powerClicks >= 3 ? 'bg-red-500 animate-ping' : 'bg-slate-800'}`} />
+                          <span className="text-slate-400 text-[10px] ml-1">({powerClicks}/3 clics)</span>
                         </div>
-                        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-400 select-none pointer-events-none">
-                          {companionActive ? 'Geolocalizando trayecto en tiempo real...' : 'Desliza o activa para simular trayecto'}
-                        </span>
                       </div>
 
-                      {companionActive && (
-                        <motion.div 
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          className="bg-white/[0.02] border border-[#00FF88]/10 p-3 rounded-xl space-y-2 text-[11px] text-emerald-400 font-medium"
+                      <div className="flex gap-3 items-center">
+                        <button
+                          type="button"
+                          onClick={handlePhysicalPowerClick}
+                          className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/[0.08] text-xs font-black tracking-wide flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer text-white"
                         >
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                            <span>Vigilancia de ruta activa por cámaras C5i</span>
+                          <Key className="w-3.5 h-3.5 text-red-400" />
+                          <span>PULSAR BOTÓN FÍSICO</span>
+                        </button>
+                        
+                        <button
+                          type="button"
+                          onClick={() => setPowerClicks(0)}
+                          className="px-3 py-2.5 rounded-xl bg-slate-950 hover:bg-slate-900 border border-white/[0.04] text-[10px] text-slate-500 transition-all cursor-pointer"
+                        >
+                          Reset
+                        </button>
+                      </div>
+
+                      <p className="text-[10px] text-slate-500 leading-normal">
+                        *En condiciones reales de estrés, el usuario puede presionar el botón de encendido físico del teléfono móvil tres veces consecutivas en su bolsillo para activar silenciosamente la alarma en el C5i Hidalgo.
+                      </p>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* RIGHT COLUMN: PREVENTIVE AND REGISTER TOOLS (6 columns wide) */}
+                <div className="lg:col-span-6 space-y-6">
+                  
+                  {/* 1. REGISTRO E IDENTIDAD SEGURA (CURP, OTP, Ficha Médica) */}
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-lg space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
+                          <User className="w-4.5 h-4.5" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black text-white">1. Registro de Identidad Segura</h3>
+                          <p className="text-[10px] text-slate-400">Validación CURP y SMS OTP para prevención de fraude</p>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-black border ${identitySaved && otpVerified ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                        {identitySaved && otpVerified ? 'VERIFICADO & ENLAZADO' : 'INCOMPLETO'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* CURP Real-time validation */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-white flex items-center gap-1">CURP (México)</span>
+                          {curp.length > 0 && (
+                            <span className={`text-[9px] font-black ${/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/.test(curp.toUpperCase()) ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/.test(curp.toUpperCase()) ? '✓ FORMATO EXCELENTE' : '✗ PATRÓN INCORRECTO (18 CARACT.)'}
+                            </span>
+                          )}
+                        </div>
+                        <input 
+                          type="text"
+                          maxLength={18}
+                          value={curp}
+                          onChange={(e) => setCurp(e.target.value.toUpperCase())}
+                          placeholder="Introduce tu CURP de 18 caracteres"
+                          className="w-full bg-slate-950 border border-white/[0.08] focus:border-red-500/40 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-600 outline-none transition-all uppercase font-mono"
+                        />
+                      </div>
+
+                      {/* Phone SMS OTP verify block */}
+                      <div className="space-y-2">
+                        <span className="text-xs font-bold text-white block">Teléfono Móvil & Validación SMS OTP</span>
+                        <div className="flex gap-2">
+                          <input 
+                            type="tel"
+                            maxLength={10}
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                            placeholder="Número móvil a 10 dígitos"
+                            disabled={otpVerified}
+                            className="flex-1 bg-slate-950 border border-white/[0.08] focus:border-red-500/40 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-600 outline-none transition-all font-mono disabled:opacity-50"
+                          />
+                          
+                          {!otpVerified ? (
+                            <button
+                              type="button"
+                              onClick={handleSendOTP}
+                              className="px-4 bg-slate-900 hover:bg-slate-800 border border-white/[0.08] text-white rounded-xl text-xs font-black transition-all cursor-pointer"
+                            >
+                              {otpSent ? 'Reenviar' : 'Enviar OTP'}
+                            </button>
+                          ) : (
+                            <span className="px-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-bold flex items-center justify-center">
+                              Verificado
+                            </span>
+                          )}
+                        </div>
+
+                        {/* OTP verification input code (shown when sent) */}
+                        {otpSent && !otpVerified && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-slate-950 border border-white/[0.04] p-3 rounded-xl flex gap-2.5 items-center justify-between"
+                          >
+                            <div className="space-y-1 flex-1">
+                              <span className="text-[10px] text-slate-400 font-bold block">Código SMS Recibido (Simulación: 1910)</span>
+                              <input 
+                                type="text"
+                                maxLength={4}
+                                value={otpCode}
+                                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                                placeholder="Escribe el PIN de 4 dígitos"
+                                className="w-full bg-slate-900 border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-600 outline-none font-mono"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleVerifyOTP}
+                              className="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 rounded-lg text-xs font-black transition-all cursor-pointer mt-4"
+                            >
+                              Validar
+                            </button>
+                          </motion.div>
+                        )}
+                      </div>
+
+                      {/* Personal medical details */}
+                      <div className="bg-slate-950/50 border border-white/[0.03] p-4 rounded-xl space-y-3.5">
+                        <span className="text-[10px] font-black tracking-wider text-slate-400 uppercase block">DATOS BIOMÉDICOS PARA EMERGENCIAS (ENLACE C5i)</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold">Nombre Completo:</span>
+                            <input 
+                              type="text"
+                              value={medicalName}
+                              onChange={(e) => setMedicalName(e.target.value)}
+                              placeholder="Ej. Sofía Ramos"
+                              className="w-full bg-slate-900 border border-white/[0.08] rounded-lg px-2.5 py-2 text-xs text-white placeholder-slate-600 outline-none"
+                            />
                           </div>
-                          <p className="text-[10px] text-slate-400 font-normal leading-relaxed">
-                            Ruta simulada: <span className="text-white font-bold">Plaza Independencia (Pachuca) → Blvd. Colosio</span>. Tu dispositivo enviará paquetes telemétricos cada 3 segundos.
-                          </p>
-                        </motion.div>
+                          <div className="space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold">Edad:</span>
+                            <input 
+                              type="number"
+                              value={medicalAge}
+                              onChange={(e) => setMedicalAge(e.target.value)}
+                              placeholder="Ej. 28"
+                              className="w-full bg-slate-900 border border-white/[0.08] rounded-lg px-2.5 py-2 text-xs text-white placeholder-slate-600 outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold">Grupo Sanguíneo:</span>
+                            <select 
+                              value={medicalBlood}
+                              onChange={(e) => setMedicalBlood(e.target.value)}
+                              className="w-full bg-slate-900 border border-white/[0.08] rounded-lg px-2 py-2 text-xs text-white outline-none"
+                            >
+                              {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map(type => (
+                                <option key={type} value={type} className="bg-slate-950">{type}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold">Alergias o Enfermedades:</span>
+                            <input 
+                              type="text"
+                              value={medicalAllergies}
+                              onChange={(e) => setMedicalAllergies(e.target.value)}
+                              placeholder="Ej. Penicilina"
+                              className="w-full bg-slate-900 border border-white/[0.08] rounded-lg px-2.5 py-2 text-xs text-white placeholder-slate-600 outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Save Identity Button */}
+                      <button
+                        type="button"
+                        onClick={handleSaveIdentity}
+                        className="w-full py-2.5 bg-red-500 hover:bg-red-600 active:scale-95 text-white text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>GUARDAR FICHA E INICIAR REGISTRO</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 5. MÓDULO AVANZADO "ACOMPÁÑAME" (Preventivo con PIN) */}
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                          <Navigation className="w-4.5 h-4.5" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-white">5. Módulo Preventivo "Acompáñame"</h3>
+                          <p className="text-[10px] text-slate-400">Ruta bajo temporizador y desactivación obligatoria por PIN</p>
+                        </div>
+                      </div>
+                      
+                      <button 
+                        onClick={handleCompanionToggle}
+                        className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-300 flex items-center cursor-pointer ${escortTimerActive ? 'bg-[#00FF88]' : 'bg-white/10'}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform duration-300 ${escortTimerActive ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </button>
+                    </div>
+
+                    {/* Temporizador Interactivo */}
+                    <div className="space-y-4">
+                      {!escortTimerActive ? (
+                        <div className="space-y-3">
+                          <div className="flex justify-between text-xs font-bold text-slate-300">
+                            <span>Duración del Trayecto de Riesgo:</span>
+                            <span className="text-amber-400 font-black">{escortTimerMinutes} minutos</span>
+                          </div>
+                          
+                          <input 
+                            type="range"
+                            min={1}
+                            max={60}
+                            value={escortTimerMinutes}
+                            onChange={(e) => setEscortTimerMinutes(Number(e.target.value))}
+                            className="w-full accent-amber-500 bg-slate-900 rounded-lg h-2"
+                          />
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <span className="text-[10px] text-slate-400 font-bold block">PIN de Desactivación:</span>
+                              <input 
+                                type="text"
+                                maxLength={4}
+                                value={escortPin}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/\D/g, '');
+                                  setEscortPin(val);
+                                  localStorage.setItem('hidalgo_escort_pin', val);
+                                }}
+                                className="w-full bg-slate-950 border border-white/[0.08] focus:border-amber-500/30 rounded-xl px-3 py-2 text-xs text-white text-center font-mono font-bold"
+                              />
+                            </div>
+                            <div className="text-[9px] text-slate-500 flex items-center pt-3">
+                              *Si el temporizador expira y no ingresas este PIN, el C5i enviará un S.O.S de emergencia automáticamente.
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handleCompanionToggle}
+                            className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg"
+                          >
+                            <Clock className="w-4 h-4" />
+                            <span>INICIAR TRAYECTO PROTEGIDO ({escortTimerMinutes} MIN)</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="bg-amber-500/[0.02] border border-amber-500/20 p-4.5 rounded-2xl space-y-4 text-center">
+                          <div className="flex items-center justify-between text-[11px] text-amber-400 font-bold border-b border-amber-500/10 pb-2">
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                              Trayecto en Curso (Monitoreo C5i)
+                            </span>
+                            <span>PIN CONFIGURADO: ****</span>
+                          </div>
+
+                          {/* Countdown display */}
+                          <div className="py-2">
+                            <span className="text-4xl font-black text-amber-400 tracking-widest font-mono">
+                              {Math.floor(escortTimeLeft / 60)}:{(escortTimeLeft % 60).toString().padStart(2, '0')}
+                            </span>
+                            <span className="text-[9px] text-slate-400 block mt-1 uppercase tracking-widest">TIEMPO PARA DESACTIVACIÓN SEGURA</span>
+                          </div>
+
+                          {/* Linear progress bar */}
+                          <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                              className="bg-amber-500 h-1.5 rounded-full transition-all duration-1000" 
+                              style={{ width: `${(escortTimeLeft / (escortTimerMinutes * 60)) * 100}%` }}
+                            />
+                          </div>
+
+                          {/* Pin validation to stop the timer */}
+                          {!showPinVerification ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowPinVerification(true)}
+                              className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20 text-xs font-black transition-all cursor-pointer"
+                            >
+                              PARAR Y DESACTIVAR CON PIN
+                            </button>
+                          ) : (
+                            <motion.form 
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              onSubmit={handlePinSubmit}
+                              className="space-y-3.5 border-t border-white/[0.05] pt-4 text-left"
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-black text-slate-300 uppercase">INGRESA TU PIN DE SEGURIDAD</span>
+                                <button 
+                                  type="button" 
+                                  onClick={() => {
+                                    setShowPinVerification(false);
+                                    setEscortPinInput('');
+                                  }}
+                                  className="text-[10px] text-slate-500 hover:text-white"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                <input 
+                                  type="password"
+                                  maxLength={4}
+                                  value={escortPinInput}
+                                  readOnly
+                                  placeholder="PIN ****"
+                                  className="flex-1 bg-slate-950 border border-white/[0.08] focus:border-red-500/30 rounded-xl px-4 py-2.5 text-center text-lg text-white font-mono font-bold outline-none"
+                                />
+                              </div>
+
+                              {/* Tactile Keypad */}
+                              <div className="grid grid-cols-3 gap-1.5 max-w-[160px] mx-auto mt-2.5">
+                                {[1,2,3,4,5,6,7,8,9].map(num => (
+                                  <button
+                                    key={num}
+                                    type="button"
+                                    onClick={() => setEscortPinInput(p => (p + num).slice(0, 4))}
+                                    className="w-10 h-10 rounded-lg bg-slate-900 border border-white/5 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center cursor-pointer"
+                                  >
+                                    {num}
+                                  </button>
+                                ))}
+                                <button
+                                  type="button"
+                                  onClick={() => setEscortPinInput('')}
+                                  className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 font-bold text-[10px] flex items-center justify-center cursor-pointer"
+                                >
+                                  Borrar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEscortPinInput(p => (p + '0').slice(0, 4))}
+                                  className="w-10 h-10 rounded-lg bg-slate-900 border border-white/5 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center cursor-pointer"
+                                >
+                                  0
+                                </button>
+                                <button
+                                  type="submit"
+                                  className="w-10 h-10 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-[10px] flex items-center justify-center cursor-pointer"
+                                >
+                                  OK
+                                </button>
+                              </div>
+
+                              {pinError && (
+                                <p className="text-[10px] text-red-400 text-center font-bold">PIN incorrecto. Inténtalo de nuevo.</p>
+                              )}
+                            </motion.form>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
 
-                  {/* service 2: Trusted Circles & Contacts Manager */}
-                  <div className="bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-lg space-y-5">
-                    <div className="flex items-center justify-between">
+                  {/* 4. RED DE CONFIANZA (Contactos Seguros, límite de 5) */}
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-lg space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
                       <div>
-                        <h3 className="text-sm font-bold text-white">Contactos de Confianza (Enlaces)</h3>
-                        <p className="text-[10px] text-slate-400">Familiares alertados inmediatamente al activar S.O.S.</p>
+                        <h3 className="text-sm font-black text-white">4. Red de Confianza (Contactos de Alerta)</h3>
+                        <p className="text-[10px] text-slate-400">Hasta 5 contactos autorizados para envío de SMS en paralelo</p>
                       </div>
                       
                       <button 
-                        onClick={() => setShowAddContact(!showAddContact)}
+                        onClick={() => {
+                          if (!showAddContact && contacts.length >= 5) {
+                            alert("Has alcanzado el límite máximo de 5 contactos permitidos en tu red de confianza para evitar saturación de la pasarela SMS.");
+                            return;
+                          }
+                          setShowAddContact(!showAddContact);
+                        }}
                         className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${showAddContact ? 'bg-white/15 border-white/20 text-white' : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/25'}`}
                       >
                         {showAddContact ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
@@ -1856,14 +2621,22 @@ export default function App() {
                       </button>
                     </div>
 
-                    {/* Inline form to add contacts */}
+                    {/* Inline form to add contacts with limit validation */}
                     <AnimatePresence>
                       {showAddContact && (
                         <motion.form 
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
-                          onSubmit={handleAddContact}
+                          onSubmit={(e) => {
+                            if (contacts.length >= 5) {
+                              e.preventDefault();
+                              alert("Límite máximo de 5 contactos alcanzado.");
+                              setShowAddContact(false);
+                              return;
+                            }
+                            handleAddContact(e);
+                          }}
                           className="bg-white/[0.02] border border-white/[0.06] p-4 rounded-2xl space-y-3 overflow-hidden"
                         >
                           <h4 className="text-[10px] font-black tracking-wider text-slate-400 uppercase">Nuevo Enlace de Seguridad</h4>
@@ -1890,7 +2663,7 @@ export default function App() {
                             className="w-full py-2 bg-red-500 hover:bg-red-600 active:scale-95 text-white text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             <Check className="w-3.5 h-3.5" />
-                            <span>Registrar Contacto</span>
+                            <span>Registrar Contacto ({contacts.length}/5)</span>
                           </button>
                         </motion.form>
                       )}
@@ -1926,188 +2699,617 @@ export default function App() {
                           </span>
                         </div>
                       ))}
+
+                      {/* Empty state slots up to 5 */}
+                      {Array.from({ length: Math.max(0, 5 - contacts.length) }).map((_, i) => (
+                        <div 
+                          key={`empty-${i}`}
+                          onClick={() => {
+                            if (!showAddContact) {
+                              setShowAddContact(true);
+                            }
+                          }}
+                          className="bg-slate-950/10 border border-white/[0.04] border-dashed rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 text-slate-600 hover:text-slate-400 hover:border-white/10 transition-all cursor-pointer select-none"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span className="text-[9px] font-black">SLOT DISPONIBLE</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
+
                 </div>
               </motion.div>
             )}
 
             {/* ROLEPERSPECTIVE 2: AGENTE (Response Officer Interface) */}
             {hubRole === 'agente' && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start w-full"
-              >
-                {/* LEFT CORE: DISPATCH NOTIFICATION & GPS GPS NAVEGADOR */}
-                <div className="md:col-span-7 bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-xl space-y-6">
-                  
-                  {/* Officer active duty status header */}
-                  <div className="bg-slate-900/40 border border-white/[0.05] p-4 rounded-2xl flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                        <Shield className="w-5 h-5 animate-pulse" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-bold text-white">Unidad Hidalgo 04</h3>
-                        <p className="text-[10px] text-slate-400">Patrulla de Respuesta Inmediata Pachuca Centro</p>
-                      </div>
-                    </div>
-                    
-                    <button 
-                      onClick={() => setHubAgentActive(!hubAgentActive)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${hubAgentActive ? 'bg-emerald-400 text-slate-950 font-black' : 'bg-white/5 border border-white/10 text-slate-500'}`}
+              <div className="space-y-6 w-full font-sans text-slate-200 relative">
+                
+                {/* INTRUSIVE HIGH-URGENCY PROXIMITY ALERT OVERLAY */}
+                <AnimatePresence>
+                  {proximityAlertActive && (
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 bg-[#0c0303]/95 backdrop-blur-md z-50 flex items-center justify-center p-4"
                     >
-                      <span className={`w-2 h-2 rounded-full ${hubAgentActive ? 'bg-slate-950' : 'bg-slate-600'}`} />
-                      <span>{hubAgentActive ? 'DISPONIBLE' : 'INACTIVO'}</span>
-                    </button>
-                  </div>
-
-                  {/* Active Incident Dispatch Alert Card */}
-                  <div className={`p-5 rounded-2xl border transition-all duration-300 space-y-4 ${hubAlertAccepted ? 'bg-emerald-500/[0.02] border-emerald-500/15' : 'bg-red-500/[0.02] border-red-500/25 animate-pulse'}`}>
-                    <div className="flex justify-between items-start">
-                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[8px] font-black tracking-widest ${hubAlertAccepted ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-500'}`}>
-                        {hubAlertAccepted ? 'INCIDENTE ATENDIDO POR U-04' : 'C5i DISPATCH: CÓDIGO ROJO'}
-                      </span>
-                      <span className="text-xs text-slate-400 font-bold flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-red-500" />
-                        <span>a 1.2 km</span>
-                      </span>
-                    </div>
-
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-black text-white">Ciudadano: Rosa María Gómez (S.O.S.)</h4>
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        Ubicación: <span className="text-white font-bold">Av. Juárez esq. Guerrero, Pachuca Centro</span> (Referencia: Frente a Reloj Monumental)
-                      </p>
-                    </div>
-
-                    {!hubAlertAccepted ? (
-                      <div className="flex gap-3 pt-2">
-                        <button 
-                          onClick={() => alert('Coordinando con central C5i para redistribuir patrulla...')}
-                          className="flex-1 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 text-xs font-bold transition-all cursor-pointer border border-white/[0.06]"
-                        >
-                          Rechazar/Delegar
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setHubAlertAccepted(true);
-                            addLog({
-                              time: new Date().toLocaleTimeString(),
-                              type: 'success',
-                              message: '🚓 Unidad Hidalgo-04 aceptó la alerta de pánico. Trazando ruta crítica hacia Av. Juárez.'
-                            });
-                          }}
-                          className="flex-2 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-red-500/20"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Aceptar Despacho</span>
-                        </button>
-                      </div>
-                    ) : (
-                      /* Active response route telemetry */
                       <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="bg-slate-950/80 border border-emerald-500/20 p-4 rounded-xl space-y-4"
+                        initial={{ scale: 0.9, y: 30 }}
+                        animate={{ scale: 1, y: 0 }}
+                        exit={{ scale: 0.9, y: 30 }}
+                        className="bg-slate-900 border border-red-500/40 rounded-3xl p-6 max-w-lg w-full text-center space-y-5 shadow-[0_0_60px_rgba(239,68,68,0.5)] relative overflow-hidden"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                            <span>EN RUTA CRÍTICA HACIA OBJETIVO</span>
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-600 via-red-400 to-red-600 animate-pulse" />
+                        
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-14 h-14 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center text-red-500 animate-bounce">
+                            <ShieldAlert className="w-8 h-8" />
                           </div>
-                          <span className="text-[10px] text-slate-500 font-mono">VEL: 54 km/h</span>
+                          <h3 className="text-lg font-black text-white uppercase tracking-wider">🚨 DESPACHO DE EMERGENCIA POR GEOCERCA</h3>
+                          <p className="text-xs text-slate-400">El C5i ha detectado un incidente crítico dentro de tu radio operativo de cobertura.</p>
                         </div>
 
-                        {/* Interactive compass & navigator panel */}
-                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.04] p-3 rounded-lg">
+                        {/* Coverage verification stats */}
+                        <div className="bg-slate-950/80 border border-white/[0.04] p-4 rounded-xl text-left space-y-3">
+                          <div className="flex justify-between items-center border-b border-white/[0.05] pb-2 text-[10px] font-bold">
+                            <span className="text-slate-400">CRITERIO DE GEOCERCA SATISFECHO:</span>
+                            <span className="text-emerald-400 font-mono">D ({victimDistance} km) ≤ X ({agentCoverageRadius} km)</span>
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <span className="text-[9px] text-slate-500 uppercase font-black block">Ciudadana en peligro:</span>
+                            <span className="text-sm font-bold text-white">Sofía Ramos (S.O.S Activo)</span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <span className="text-[9px] text-slate-500 uppercase font-black block">Ubicación del reporte:</span>
+                              <span className="font-semibold text-slate-200">Plaza Juárez, Pachuca Centro</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[9px] text-slate-500 uppercase font-black block">Distancia de Cobertura:</span>
+                              <span className="font-black text-red-400">{victimDistance} km</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Persistent siren pulsing feedback */}
+                        <div className="flex items-center justify-center gap-2 text-xs text-red-400 font-bold animate-pulse">
+                          <span className="w-2 h-2 rounded-full bg-red-500" />
+                          <span>SIRENA ACÚSTICA DE ALTA URGENCIA SONANDO...</span>
+                        </div>
+
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProximityAlertActive(false);
+                              stopSiren();
+                              addLog({
+                                time: new Date().toLocaleTimeString(),
+                                type: 'info',
+                                message: '⚠️ [DESPACHO] El oficial pospuso la alerta de proximidad. Reasignando patrulla.'
+                              });
+                            }}
+                            className="flex-1 py-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-white text-xs font-bold transition-all border border-white/[0.06] cursor-pointer"
+                          >
+                            Rechazar / Reasignar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProximityAlertActive(false);
+                              stopSiren();
+                              setHubAlertAccepted(true);
+                              const timestamp = new Date().toLocaleTimeString();
+                              setAcceptedAlertTime(timestamp);
+                              addLog({
+                                time: timestamp,
+                                type: 'success',
+                                message: `🚓 [DESPACHO PROXIMIDAD] Alerta aceptada por Unidad Hidalgo-04 a las ${timestamp}. Distancia: ${victimDistance} km. Iniciando ruta GPS.`
+                              });
+                            }}
+                            className="flex-2 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-red-500/20"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Aceptar Alerta</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full"
+                >
+                  {/* LEFT COLUMN: DISPATCH NOTIFICATION & GPS GPS NAVEGADOR */}
+                  <div className="lg:col-span-7 space-y-6">
+                    
+                    {/* 1. Control de Estado Operativo (Estatus del Oficial) */}
+                    <div className="bg-[#000000]/80 border border-white/[0.08] p-5 rounded-[24px] backdrop-blur-md space-y-4">
+                      <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                            <Shield className="w-5 h-5 animate-pulse" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-bold text-white">1. Control de Estado Operativo</h3>
+                            <p className="text-[10px] text-slate-400">Disponibilidad en tiempo real para el despacho del C5i</p>
+                          </div>
+                        </div>
+
+                        {/* Interactive toggle switch styled beautifully */}
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-black tracking-wider uppercase ${hubAgentActive ? 'text-emerald-400' : 'text-slate-500'}`}>
+                            {hubAgentActive ? 'ACTIVO' : 'INACTIVO'}
+                          </span>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              const nextState = !hubAgentActive;
+                              setHubAgentActive(nextState);
+                              addLog({
+                                time: new Date().toLocaleTimeString(),
+                                type: nextState ? 'success' : 'info',
+                                message: `🚓 [ESTADO OPERATIVO] Oficial cambió su estatus a: ${nextState ? 'Activo (Disponible para despachar)' : 'Inactivo (Fuera de servicio / reporte / descanso)'}`
+                              });
+                            }}
+                            className={`w-12 h-6.5 rounded-full p-0.5 transition-colors duration-300 flex items-center cursor-pointer ${hubAgentActive ? 'bg-emerald-400' : 'bg-slate-800 border border-white/10'}`}
+                          >
+                            <div className={`w-5.5 h-5.5 rounded-full shadow transform transition-transform duration-300 ${hubAgentActive ? 'translate-x-5.5 bg-slate-950' : 'translate-x-0 bg-slate-400'}`} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Automated location sending feedback */}
+                      {hubAgentActive ? (
+                        <div className="bg-emerald-500/5 border border-emerald-500/10 p-3.5 rounded-xl text-xs space-y-1.5">
+                          <div className="flex justify-between items-center text-emerald-400 font-bold">
+                            <span className="flex items-center gap-1.5 text-[11px]">
+                              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                              Transmisión de Ubicación de Patrulla en Tiempo Real
+                            </span>
+                            <span className="text-[9px] text-slate-400 font-mono">Tx: {lastTelemetryTx || 'Conectando...'}</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 leading-normal">
+                            Tu posición está siendo sincronizada activamente con la central del C5i Hidalgo. 
+                            Coordenadas GPS actuales: <span className="font-mono text-white font-bold">{patrolLat.toFixed(5)}°, {patrolLng.toFixed(5)}°</span>
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-slate-950/40 border border-white/[0.02] p-3.5 rounded-xl text-xs text-slate-500 text-center">
+                          ⚠️ Transmisión de ubicación pausada por estatus inactivo (fuera de servicio o descanso).
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 2. Recepción de Servicios por Proximidad (Geocercas) */}
+                    <div className="bg-[#000000]/80 border border-white/[0.08] p-5 rounded-[24px] backdrop-blur-md space-y-4">
+                      <div>
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                          <Radio className="w-4 h-4 text-red-500" />
+                          <span>2. Recepción de Servicios por Proximidad (Geocercas)</span>
+                        </h3>
+                        <p className="text-[10px] text-slate-400">Algoritmo de cobertura basado en geofencing matemático</p>
+                      </div>
+
+                      {/* Simulator controls for math validation */}
+                      <div className="bg-slate-950/50 p-4 rounded-xl border border-white/[0.03] space-y-4">
+                        <span className="text-[10px] font-black tracking-wider text-slate-400 uppercase block">SIMULADOR DE RANGO OPERATIVO (C5i DISPATCH)</span>
+                        
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-300">Radio de Cobertura de Patrulla (X):</span>
+                            <span className="text-emerald-400 font-black">{agentCoverageRadius} km</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            min={1} 
+                            max={15} 
+                            value={agentCoverageRadius} 
+                            onChange={(e) => setAgentCoverageRadius(Number(e.target.value))}
+                            className="w-full accent-emerald-500 bg-slate-900 rounded-lg h-2"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-300">Distancia Estimada a la Víctima (D):</span>
+                            <span className="text-red-400 font-black">{victimDistance} km</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            min={1} 
+                            max={20} 
+                            step={0.5}
+                            value={victimDistance} 
+                            onChange={(e) => setVictimDistance(Number(e.target.value))}
+                            className="w-full accent-red-500 bg-slate-900 rounded-lg h-2"
+                          />
+                        </div>
+
+                        <div className="border-t border-white/[0.04] pt-3 space-y-2 text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400">Fórmula de evaluación de proximidad:</span>
+                            <span className="font-mono text-slate-200 bg-slate-950 px-2 py-0.5 rounded border border-white/[0.04]">D_víctima ≤ X_cobertura</span>
+                          </div>
+
+                          <div className="flex justify-between items-center bg-slate-950 p-2.5 rounded-lg border border-white/[0.02]">
+                            <span className="text-slate-300">Estado del algoritmo:</span>
+                            <div className="flex items-center gap-1.5 font-bold">
+                              <span className={`w-2 h-2 rounded-full ${victimDistance <= agentCoverageRadius ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                              <span className={victimDistance <= agentCoverageRadius ? 'text-emerald-400' : 'text-amber-400'}>
+                                {victimDistance <= agentCoverageRadius ? '✓ Dentro de Rango' : '✗ Fuera de Geocerca'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={!hubAgentActive}
+                          onClick={() => {
+                            if (!hubAgentActive) return;
+                            if (victimDistance <= agentCoverageRadius) {
+                              setProximityAlertActive(true);
+                              if (soundEnabled) {
+                                startSiren();
+                              }
+                              addLog({
+                                time: new Date().toLocaleTimeString(),
+                                type: 'warning',
+                                message: `🚨 [GEOCERCA DETECTADA] ¡Incidente emitido dentro del perímetro de respuesta! Distancia: ${victimDistance} km. Sirena de despacho iniciada.`
+                              });
+                            } else {
+                              alert(`El reporte actual se encuentra a ${victimDistance} km, excediendo tu radio de cobertura asignado de ${agentCoverageRadius} km. El C5i canalizará a otra patrulla.`);
+                            }
+                          }}
+                          className={`w-full py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            !hubAgentActive 
+                              ? 'bg-slate-900 text-slate-500 cursor-not-allowed border border-white/5' 
+                              : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 text-white shadow-lg shadow-red-500/10'
+                          }`}
+                        >
+                          <Radio className="w-3.5 h-3.5 animate-pulse" />
+                          <span>SIMULAR INCIDENTE EN GEOCERCA</span>
+                        </button>
+                        
+                        {!hubAgentActive && (
+                          <p className="text-[10px] text-red-400 text-center font-bold animate-pulse">
+                            * Cambia tu estado operativo a "ACTIVO" para poder simular e interceptar alertas por geocerca.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 3. Enrutamiento y Navegación GPS (Visible si se acepta una alerta) */}
+                    {hubAlertAccepted && (
+                      <div className="bg-[#000000]/80 border border-white/[0.08] p-5 rounded-[24px] backdrop-blur-md space-y-4">
+                        <div className="flex justify-between items-center border-b border-white/[0.05] pb-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 animate-pulse">
-                              <Navigation className="w-4 h-4 transform -rotate-45" />
+                            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                              <Navigation className="w-4.5 h-4.5 transform -rotate-45" />
                             </div>
                             <div>
-                              <div className="text-[11px] font-bold text-white">Continuar por Av. Juárez</div>
-                              <div className="text-[9px] text-slate-500">Da vuelta a la izquierda en 150m</div>
+                              <h3 className="text-sm font-bold text-white">3. Enrutamiento y Navegación GPS</h3>
+                              <p className="text-[10px] text-slate-400">Canalización satelital y recalculación dinámica de trayecto</p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-xs font-mono font-black text-emerald-400">950 m</div>
-                            <div className="text-[9px] text-slate-500">Tiempo: 1.5 min</div>
+
+                          <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded text-[9px] font-bold text-emerald-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                            <span>GPS EN VIVO</span>
                           </div>
                         </div>
 
-                        <button 
-                          onClick={() => alert('Simulador GPS: Ruta sincronizada activamente con despacho de C5i.')}
-                          className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer"
-                        >
-                          <Map className="w-4 h-4" />
-                          <span>Ver Mapa Táctico GPS</span>
-                        </button>
-                      </motion.div>
+                        {/* Interactive dynamic map simulation (SVG Canvas-like drawing) */}
+                        <div className="relative h-44 bg-slate-950 rounded-2xl border border-white/[0.05] overflow-hidden flex items-center justify-center">
+                          {/* Grid background */}
+                          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:16px_16px]" />
+                          
+                          {/* SVG path mapping patrol to victim */}
+                          <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                            <defs>
+                              <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#ef4444" />
+                                <stop offset="100%" stopColor="#10b981" />
+                              </linearGradient>
+                            </defs>
+                            {/* Route Line */}
+                            <motion.path 
+                              d="M 50 140 Q 150 40 280 60" 
+                              fill="none" 
+                              stroke="url(#routeGradient)" 
+                              strokeWidth="3" 
+                              strokeDasharray="6 4"
+                              animate={{ strokeDashoffset: [0, -20] }}
+                              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                            />
+                          </svg>
+
+                          {/* Patrol Car Marker */}
+                          <div className="absolute bottom-6 left-12 flex flex-col items-center">
+                            <span className="text-[8px] bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 px-1 py-0.5 rounded font-black mb-1 font-mono uppercase">PATRULLA U-04</span>
+                            <div className="w-8 h-8 rounded-full bg-emerald-500/10 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 animate-pulse">
+                              <Shield className="w-4 h-4" />
+                            </div>
+                          </div>
+
+                          {/* Victim Marker */}
+                          <div className="absolute top-8 right-16 flex flex-col items-center">
+                            <span className="text-[8px] bg-red-500/20 border border-red-500/30 text-red-400 px-1 py-0.5 rounded font-black mb-1 font-mono uppercase">VÍCTIMA (S.O.S)</span>
+                            <div className="w-8 h-8 rounded-full bg-red-500/15 border-2 border-red-500 flex items-center justify-center text-red-500 animate-pulse">
+                              <MapPin className="w-4 h-4" />
+                            </div>
+                          </div>
+
+                          {/* Float coordinate HUD */}
+                          <div className="absolute bottom-2 right-2 bg-slate-900/90 border border-white/[0.08] px-2.5 py-1.5 rounded-lg text-[9px] font-mono space-y-0.5 max-w-[170px]">
+                            <div className="text-slate-400">Patrulla: {patrolLat.toFixed(5)}°, {patrolLng.toFixed(5)}°</div>
+                            <div className="text-red-400">Víctima: {victimLat.toFixed(5)}°, {victimLng.toFixed(5)}°</div>
+                          </div>
+                        </div>
+
+                        {/* Real-time drift status trigger */}
+                        <div className="bg-slate-950/60 p-3 rounded-xl border border-white/[0.03] flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2 text-slate-300">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                            <span>La víctima está en movimiento (Desplazamiento real)</span>
+                          </div>
+                          
+                          <button
+                            type="button"
+                            onClick={() => setVictimMoving(!victimMoving)}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border cursor-pointer ${
+                              victimMoving 
+                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                                : 'bg-slate-900 border-white/5 text-slate-500'
+                            }`}
+                          >
+                            {victimMoving ? 'MOVIMIENTO: ACTIVO' : 'PAUSADO'}
+                          </button>
+                        </div>
+
+                        {/* Direct GPS integration buttons with maps */}
+                        <div className="grid grid-cols-2 gap-3.5">
+                          <a 
+                            href={`https://maps.google.com/?q=${victimLat},${victimLng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/[0.08] text-white text-xs font-black flex items-center justify-center gap-2 transition-all hover:scale-101 shadow"
+                          >
+                            <Map className="w-4 h-4 text-emerald-400" />
+                            <span>Abrir en Google Maps</span>
+                          </a>
+
+                          <a 
+                            href={`https://waze.com/ul?ll=${victimLat},${victimLng}&navigate=yes`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/[0.08] text-white text-xs font-black flex items-center justify-center gap-2 transition-all hover:scale-101 shadow"
+                          >
+                            <Navigation className="w-4 h-4 text-amber-500 transform rotate-45" />
+                            <span>Abrir en Waze GPS</span>
+                          </a>
+                        </div>
+
+                        <div className="bg-white/[0.02] border border-white/[0.04] p-3 rounded-xl flex justify-between items-center text-xs">
+                          <div>
+                            <span className="text-slate-400 uppercase text-[9px] font-bold block">Distancia Recalculada</span>
+                            <span className="text-sm font-black text-white">{victimDistance} kilómetros</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-slate-400 uppercase text-[9px] font-bold block">ETA Estimado de Llegada</span>
+                            <span className="text-sm font-black text-emerald-400">~{(victimDistance * 1.5).toFixed(1)} minutos</span>
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
 
-                {/* RIGHT CORE: CASE RESOLUTION & TECHNICAL REPORTS */}
-                <div className="md:col-span-5 bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-xl space-y-5">
-                  <div className="space-y-1.5 border-b border-white/[0.05] pb-4">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-emerald-400" />
-                      <span>Informe Técnico Operativo</span>
-                    </h3>
-                    <p className="text-[10px] text-slate-400">Envío de evidencias y comentarios de resolución de alerta para base de datos de seguridad.</p>
-                  </div>
+                  {/* RIGHT COLUMN: CASE RESOLUTION & TECHNICAL REPORTS (Auditoría Municipal) */}
+                  <div className="lg:col-span-5 space-y-6">
+                    
+                    {/* 4. Reporte de Cierre Obligatorio (Auditoría Municipal) */}
+                    <div className="bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-xl space-y-5">
+                      <div className="space-y-1 border-b border-white/[0.05] pb-4">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4.5 h-4.5 text-emerald-400" />
+                          <h3 className="text-sm font-black text-white uppercase tracking-wider">4. Reporte Oficial de Cierre</h3>
+                        </div>
+                        <p className="text-[10px] text-slate-400">Exigencia de auditoría para el histórico de incidentes municipales</p>
+                      </div>
 
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                        Diagnóstico / Resolución de Alerta
-                      </label>
-                      <textarea 
-                        value={hubClosingReport}
-                        onChange={(e) => setHubClosingReport(e.target.value)}
-                        placeholder="Ingresa la bitácora o resolución del incidente (ej. Alerta atendida. Ciudadano se encuentra seguro. Sin lesionados. Unidad Hidalgo-04 retorna a patrullaje)..."
-                        className="w-full bg-slate-950 border border-white/[0.08] focus:border-emerald-500/30 rounded-xl p-3 text-xs text-white placeholder-slate-500 outline-none h-28 resize-none transition-all leading-relaxed"
-                      />
+                      {/* Locked State if no alert is active */}
+                      {!hubAlertAccepted ? (
+                        <div className="py-8 px-4 text-center space-y-3 bg-slate-950/40 rounded-2xl border border-white/[0.03]">
+                          <Lock className="w-7 h-7 text-slate-600 mx-auto" />
+                          <div className="text-xs font-bold text-slate-400">Reporte Bloqueado</div>
+                          <p className="text-[10px] text-slate-500 max-w-xs mx-auto">
+                            Este reporte se desbloqueará automáticamente una vez que la patrulla acepte un despacho de emergencia y complete la llegada in situ.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          
+                          {/* Incident Classification Dropdown */}
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                              Clasificación Final del Incidente
+                            </label>
+                            <select
+                              value={reportClassification}
+                              onChange={(e) => setReportClassification(e.target.value)}
+                              className="w-full bg-slate-950 border border-white/[0.08] text-white text-xs rounded-xl px-3 py-2.5 outline-none font-medium focus:border-emerald-500/30"
+                            >
+                              <option value="Incidente Controlado" className="bg-slate-900">Incidente Controlado / Neutralizado</option>
+                              <option value="Falsa Alarma" className="bg-slate-900">Falsa Alarma / Sin Suceso Real</option>
+                              <option value="Detención de Sospechoso" className="bg-slate-900">Detención Directa de Sospechoso</option>
+                              <option value="Traslado Médico / Apoyo" className="bg-slate-900">Traslado Médico / Apoyo de Ambulancia</option>
+                              <option value="Sin Novedad / Conciliación" className="bg-slate-900">Sin Novedad / Conciliación Mutua</option>
+                            </select>
+                          </div>
+
+                          {/* Descriptive text input (Novedades) */}
+                          <div className="space-y-1.5">
+                            <div className="flex justify-between items-center">
+                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                Relato Descriptivo ("Novedades")
+                              </label>
+                              <span className={`text-[9px] font-bold ${hubClosingReport.trim().length >= 10 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {hubClosingReport.trim().length}/10 caracteres mín.
+                              </span>
+                            </div>
+                            <textarea 
+                              value={hubClosingReport}
+                              onChange={(e) => setHubClosingReport(e.target.value)}
+                              placeholder="Relata detalladamente los sucesos acontecidos en el lugar, indicando el estado final de la víctima y la resolución del percance..."
+                              className="w-full bg-slate-950 border border-white/[0.08] focus:border-emerald-500/30 rounded-xl p-3 text-xs text-white placeholder-slate-600 outline-none h-24 resize-none transition-all leading-relaxed"
+                            />
+                          </div>
+
+                          {/* Mandatory scene photo capture */}
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                              Fotografía de Evidencia In Situ (Obligatoria)
+                            </label>
+
+                            {reportPhoto ? (
+                              <div className="relative rounded-xl overflow-hidden border border-emerald-500/35 bg-slate-950">
+                                {/* Simulated image with watermarked HUD */}
+                                <img 
+                                  src={reportPhoto} 
+                                  alt="Evidencia policial" 
+                                  className="w-full h-36 object-cover opacity-85" 
+                                  referrerPolicy="no-referrer"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent pointer-events-none" />
+                                
+                                {/* Watermark over image */}
+                                <div className="absolute inset-x-2 bottom-2 text-[8px] font-mono text-white/90 bg-slate-950/80 p-2 rounded-lg space-y-0.5">
+                                  <div className="font-bold text-emerald-400">🛡️ [EVIDENCIA MUNICIPAL C5i HIDALGO]</div>
+                                  <div>UNIDAD: HIDALGO-04 | COORDS: {patrolLat.toFixed(5)}°, {patrolLng.toFixed(5)}°</div>
+                                  <div>FECHA: {new Date().toLocaleDateString()} | CLASE: {reportClassification}</div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setReportPhoto(null)}
+                                  className="absolute top-2 right-2 bg-red-600 text-white rounded-lg p-1 hover:bg-red-700 transition-all text-[10px] font-bold px-2.5 cursor-pointer"
+                                >
+                                  Eliminar
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="border border-white/[0.06] border-dashed rounded-xl p-6 text-center space-y-3 bg-slate-950/20">
+                                <Camera className="w-6 h-6 text-slate-600 mx-auto" />
+                                <div className="text-[11px] text-slate-400">Sin fotografía adjunta. Se requiere prueba de auditoría in situ.</div>
+                                
+                                <button
+                                  type="button"
+                                  disabled={isTakingReportPhoto}
+                                  onClick={() => {
+                                    setIsTakingReportPhoto(true);
+                                    setTimeout(() => {
+                                      // Simulated capture image with patrol scene
+                                      setReportPhoto('https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=400&q=80');
+                                      setIsTakingReportPhoto(false);
+                                      addLog({
+                                        time: new Date().toLocaleTimeString(),
+                                        type: 'success',
+                                        message: '📸 [EVIDENCIA] Captura fotográfica procesada e indexada con metadatos GPS para auditoría.'
+                                      });
+                                    }, 1200);
+                                  }}
+                                  className="mx-auto py-1.5 px-3.5 bg-slate-900 hover:bg-slate-800 text-white border border-white/[0.08] rounded-xl text-[10px] font-black transition-all flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  {isTakingReportPhoto ? (
+                                    <>
+                                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                                      <span>Capturando Evidencia...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Camera className="w-3.5 h-3.5 text-emerald-400" />
+                                      <span>Capturar Fotografía de Escena</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Validator flags display */}
+                          <div className="bg-slate-950/40 p-2.5 rounded-lg border border-white/[0.02] text-[10px] space-y-1 font-semibold">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full ${hubClosingReport.trim().length >= 10 ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                              <span className={hubClosingReport.trim().length >= 10 ? 'text-emerald-400' : 'text-slate-400'}>
+                                {hubClosingReport.trim().length >= 10 ? '✓ Relato descriptivo completo' : '✗ Se requiere relato del suceso (mínimo 10 caracteres)'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full ${reportPhoto ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                              <span className={reportPhoto ? 'text-emerald-400' : 'text-slate-400'}>
+                                {reportPhoto ? '✓ Fotografía de evidencia in situ adjuntada' : '✗ Se requiere capturar la fotografía obligatoria de evidencia'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Submit Report Button */}
+                          <button 
+                            type="button"
+                            disabled={!hubClosingReport.trim() || hubClosingReport.trim().length < 10 || !reportPhoto || hubReportSubmitted}
+                            onClick={() => {
+                              setHubReportSubmitted(true);
+                              addLog({
+                                time: new Date().toLocaleTimeString(),
+                                type: 'success',
+                                message: `📝 [AUDITORÍA] Reporte municipal guardado bajo código PRI-2026-94. Clasificación: ${reportClassification}.`
+                              });
+                              
+                              setTimeout(() => {
+                                setHubClosingReport('');
+                                setReportPhoto(null);
+                                setHubReportSubmitted(false);
+                                setHubAlertAccepted(false);
+                                setAcceptedAlertTime(null);
+                                addLog({
+                                  time: new Date().toLocaleTimeString(),
+                                  type: 'info',
+                                  message: '🚓 Unidad Hidalgo-04 completó el servicio y regresa a estatus de patrullaje preventivo.'
+                                });
+                              }, 3000);
+                            }}
+                            className={`w-full py-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                              (!hubClosingReport.trim() || hubClosingReport.trim().length < 10 || !reportPhoto || hubReportSubmitted) 
+                                ? 'bg-white/[0.03] text-slate-500 cursor-not-allowed border border-white/[0.05]' 
+                                : 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 hover:shadow-lg hover:shadow-emerald-500/20 active:scale-98'
+                            }`}
+                          >
+                            {hubReportSubmitted ? (
+                              <>
+                                <CheckCircle2 className="w-4 h-4 text-slate-950 animate-bounce" />
+                                <span>Reporte Enviado & Sincronizado en C5i</span>
+                              </>
+                            ) : (
+                              <>
+                                <Send className="w-4 h-4" />
+                                <span>Enviar Reporte Oficial de Cierre</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
 
-                    <button 
-                      disabled={!hubClosingReport.trim() || hubReportSubmitted}
-                      onClick={() => {
-                        setHubReportSubmitted(true);
-                        addLog({
-                          time: new Date().toLocaleTimeString(),
-                          type: 'success',
-                          message: `📝 Reporte de Cierre Oficial (U-04): "${hubClosingReport.slice(0, 45)}..." guardado en histórico C5i.`
-                        });
-                        setTimeout(() => {
-                          setHubClosingReport('');
-                          setHubReportSubmitted(false);
-                          setHubAlertAccepted(false);
-                        }, 3000);
-                      }}
-                      className={`w-full py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                        (!hubClosingReport.trim() || hubReportSubmitted) 
-                          ? 'bg-white/[0.03] text-slate-500 cursor-not-allowed border border-white/[0.05]' 
-                          : 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 hover:shadow-lg hover:shadow-emerald-500/20 active:scale-98'
-                      }`}
-                    >
-                      {hubReportSubmitted ? (
-                        <>
-                          <CheckCircle2 className="w-4 h-4 text-slate-950" />
-                          <span>Reporte Enviado Correctamente</span>
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-4 h-4" />
-                          <span>Enviar Reporte Oficial</span>
-                        </>
-                      )}
-                    </button>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+              </div>
             )}
 
             {/* ROLEPERSPECTIVE 3: C4 CENTRAL & C5i DESPACHADOR (Control Center Interface) */}
