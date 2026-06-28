@@ -1299,6 +1299,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'code' | 'sim' | 'info'>('sim');
   const [copied, setCopied] = useState(false);
   
+  // --- SUB-TAB STATES FOR EACH ROLE ---
+  const [ciudadanoTab, setCiudadanoTab] = useState<'sos' | 'identity' | 'preventive'>('sos');
+  const [agenteTab, setAgenteTab] = useState<'status' | 'gps' | 'report'>('status');
+  const [c4Tab, setC4Tab] = useState<'monitoring' | 'ia_filter' | 'dispatch'>('monitoring');
+  
   // Lista de Contactos de Confianza Editables
   const [contacts, setContacts] = useState<Contact[]>([
     { id: '1', name: 'Mamá', phone: '771 123 4567', initials: 'MÁ' },
@@ -1378,6 +1383,8 @@ export default function App() {
   const [voipCallDuration, setVoipCallDuration] = useState<number>(0);
   const [exportingReport, setExportingReport] = useState<boolean>(false);
   const [exportedReportUrl, setExportedReportUrl] = useState<string | null>(null);
+  const [reactionTimeKpi, setReactionTimeKpi] = useState<string>('1.8 min');
+  const [arrivalTimeKpi, setArrivalTimeKpi] = useState<string>('4.5 min');
   const [newOfficerName, setNewOfficerName] = useState<string>('');
   const [newOfficerUnit, setNewOfficerUnit] = useState<string>('');
   const [newOfficerRole, setNewOfficerRole] = useState<string>('Oficial de Campo');
@@ -2077,13 +2084,19 @@ export default function App() {
             
             {/* ROLEPERSPECTIVE 1: CIUDADANO (Citizen Interface) */}
             {hubRole === 'ciudadano' && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full font-sans text-slate-200"
-              >
-                {/* LEFT COLUMN: SOS AND LIVE SYSTEM EMERGENCIES (6 columns wide) */}
-                <div className="lg:col-span-6 space-y-6">
+              <div className="flex flex-col gap-6 items-start w-full font-sans text-slate-200 pb-24">
+                <div className="w-full">
+                  <AnimatePresence mode="wait">
+                    {ciudadanoTab === 'sos' && (
+                      <motion.div
+                        key="sos"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start w-full"
+                      >
+                        {/* LEFT COLUMN: SOS AND LIVE SYSTEM EMERGENCIES (6 columns wide) */}
+                        <div className="md:col-span-7 space-y-6 w-full">
                   
                   {/* LEFT CORE: SOS BUTTON TRIGGER */}
                   <div className="bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-xl flex flex-col items-center justify-between min-h-[440px] relative overflow-hidden">
@@ -2306,9 +2319,17 @@ export default function App() {
                   </div>
 
                 </div>
+              </motion.div>
+            )}
 
-                {/* RIGHT COLUMN: PREVENTIVE AND REGISTER TOOLS (6 columns wide) */}
-                <div className="lg:col-span-6 space-y-6">
+            {ciudadanoTab === 'identity' && (
+              <motion.div
+                key="identity"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="max-w-2xl mx-auto w-full space-y-6 text-left"
+              >
                   
                   {/* 1. REGISTRO E IDENTIDAD SEGURA (CURP, OTP, Ficha Médica) */}
                   <div className="bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-lg space-y-4">
@@ -2469,7 +2490,18 @@ export default function App() {
                       </button>
                     </div>
                   </div>
+              </motion.div>
+            )}
 
+            {ciudadanoTab === 'preventive' && (
+              <motion.div
+                key="preventive"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start w-full text-left"
+              >
+                <div className="md:col-span-6 space-y-6 w-full">
                   {/* 5. MÓDULO AVANZADO "ACOMPÁÑAME" (Preventivo con PIN) */}
                   <div className="bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-lg space-y-4">
                     <div className="flex items-center justify-between">
@@ -2772,6 +2804,52 @@ export default function App() {
                 </div>
               </motion.div>
             )}
+                  </AnimatePresence>
+                </div>
+
+                {/* ELEGANT FLOATING BOTTOM NAVIGATION BAR FOR CIUDADANO */}
+                <div className="fixed bottom-6 inset-x-0 mx-auto max-w-sm px-4 z-40">
+                  <div className="bg-slate-950/90 border border-white/[0.12] backdrop-blur-xl rounded-full p-1.5 flex items-center justify-between shadow-[0_15px_40px_rgba(0,0,0,0.9)]">
+                    <button
+                      onClick={() => setCiudadanoTab('sos')}
+                      className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-full transition-all cursor-pointer ${
+                        ciudadanoTab === 'sos' 
+                          ? 'bg-red-500 text-white font-black shadow-[0_4px_12px_rgba(239,68,68,0.3)]' 
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <ShieldAlert className="w-4 h-4" />
+                      <span className="text-[9px] font-black tracking-wider uppercase">S.O.S</span>
+                    </button>
+
+                    <button
+                      onClick={() => setCiudadanoTab('identity')}
+                      className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-full transition-all cursor-pointer ${
+                        ciudadanoTab === 'identity' 
+                          ? 'bg-red-500 text-white font-black shadow-[0_4px_12px_rgba(239,68,68,0.3)]' 
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <User className="w-4 h-4" />
+                      <span className="text-[9px] font-black tracking-wider uppercase">Identidad</span>
+                    </button>
+
+                    <button
+                      onClick={() => setCiudadanoTab('preventive')}
+                      className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-full transition-all cursor-pointer ${
+                        ciudadanoTab === 'preventive' 
+                          ? 'bg-red-500 text-white font-black shadow-[0_4px_12px_rgba(239,68,68,0.3)]' 
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Navigation className="w-4 h-4" />
+                      <span className="text-[9px] font-black tracking-wider uppercase">Escolta</span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            )}
 
             {/* ROLEPERSPECTIVE 2: AGENTE (Response Officer Interface) */}
             {hubRole === 'agente' && (
@@ -2873,13 +2951,17 @@ export default function App() {
                   )}
                 </AnimatePresence>
 
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full"
-                >
-                  {/* LEFT COLUMN: DISPATCH NOTIFICATION & GPS GPS NAVEGADOR */}
-                  <div className="lg:col-span-7 space-y-6">
+                <div className="w-full pb-24">
+                  <AnimatePresence mode="wait">
+                    {agenteTab === 'status' && (
+                      <motion.div
+                        key="status"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start w-full text-left"
+                      >
+                        <div className="md:col-span-12 space-y-6">
                     
                     {/* 1. Control de Estado Operativo (Estatus del Oficial) */}
                     <div className="bg-[#000000]/80 border border-white/[0.08] p-5 rounded-[24px] backdrop-blur-md space-y-4">
@@ -3037,6 +3119,28 @@ export default function App() {
                         )}
                       </div>
                     </div>
+                  </div>
+                </motion.div>
+              )}
+
+                {agenteTab === 'gps' && (
+                  <motion.div
+                    key="gps"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="max-w-3xl mx-auto w-full text-left space-y-6"
+                  >
+                    {/* Fallback card if no dispatch accepted */}
+                    {!hubAlertAccepted && (
+                      <div className="bg-[#000000]/80 border border-white/[0.08] p-8 rounded-[28px] backdrop-blur-md shadow-xl text-center space-y-4 max-w-lg mx-auto">
+                        <Navigation className="w-10 h-10 text-slate-500 mx-auto animate-pulse" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-wider">Esperando Despacho de Emergencia</h3>
+                        <p className="text-[10px] text-slate-400 max-w-xs mx-auto">
+                          El enrutamiento GPS y la navegación satelital activa en tiempo real se desbloquearán en esta pantalla automáticamente cuando recibas y confirmes una alerta SOS de proximidad.
+                        </p>
+                      </div>
+                    )}
 
                     {/* 3. Enrutamiento y Navegación GPS (Visible si se acepta una alerta) */}
                     {hubAlertAccepted && (
@@ -3161,10 +3265,17 @@ export default function App() {
                         </div>
                       </div>
                     )}
-                  </div>
+                  </motion.div>
+                )}
 
-                  {/* RIGHT COLUMN: CASE RESOLUTION & TECHNICAL REPORTS (Auditoría Municipal) */}
-                  <div className="lg:col-span-5 space-y-6">
+              {agenteTab === 'report' && (
+                <motion.div
+                  key="report"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="max-w-2xl mx-auto w-full text-left space-y-6"
+                >
                     
                     {/* 4. Reporte de Cierre Obligatorio (Auditoría Municipal) */}
                     <div className="bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-xl space-y-5">
@@ -3357,19 +3468,70 @@ export default function App() {
                         </div>
                       )}
                     </div>
+                  </motion.div>
+                )}
+            </AnimatePresence>
+          </div>
 
-                  </div>
-                </motion.div>
-              </div>
-            )}
+          {/* ELEGANT FLOATING BOTTOM NAVIGATION BAR FOR AGENTE */}
+          <div className="fixed bottom-6 inset-x-0 mx-auto max-w-sm px-4 z-40">
+            <div className="bg-slate-950/90 border border-white/[0.12] backdrop-blur-xl rounded-full p-1.5 flex items-center justify-between shadow-[0_15px_40px_rgba(0,0,0,0.9)]">
+              <button
+                type="button"
+                onClick={() => setAgenteTab('status')}
+                className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-full transition-all cursor-pointer ${
+                  agenteTab === 'status' 
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-[0_4px_12px_rgba(16,185,129,0.3)]' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                <span className="text-[9px] font-black tracking-wider uppercase">Estado</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAgenteTab('gps')}
+                className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-full transition-all cursor-pointer ${
+                  agenteTab === 'gps' 
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-[0_4px_12px_rgba(16,185,129,0.3)]' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Navigation className="w-4 h-4" />
+                <span className="text-[9px] font-black tracking-wider uppercase">Navegación</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAgenteTab('report')}
+                className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-full transition-all cursor-pointer ${
+                  agenteTab === 'report' 
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-[0_4px_12px_rgba(16,185,129,0.3)]' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span className="text-[9px] font-black tracking-wider uppercase">Reporte</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      )}
 
             {/* ROLEPERSPECTIVE 3: C4 CENTRAL & C5i DESPACHADOR (Control Center Interface) */}
             {hubRole === 'c4' && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6 w-full text-slate-200"
-              >
+              <div className="w-full pb-24 text-slate-200">
+                <AnimatePresence mode="wait">
+                  {c4Tab === 'monitoring' && (
+                    <motion.div
+                      key="monitoring"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="space-y-6 w-full text-slate-200"
+                    >
                 {/* 4. Monitor y Métricas de Rendimiento (Módulo de KPI) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* KPI 1: Tiempo de Reacción */}
@@ -3645,9 +3807,21 @@ export default function App() {
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
-                    {/* 2. Filtro Inteligente de Alertas con IA */}
-                    <div className="bg-[#000000]/80 border border-white/[0.08] p-5.5 rounded-3xl backdrop-blur-md space-y-4">
+            {c4Tab === 'ia_filter' && (
+              <motion.div
+                key="ia_filter"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="max-w-4xl mx-auto w-full text-left space-y-6"
+              >
+                {/* 2. Filtro Inteligente de Alertas con IA */}
+                <div className="bg-[#000000]/80 border border-white/[0.08] p-5.5 rounded-3xl backdrop-blur-md space-y-4">
                       <div>
                         <h3 className="text-sm font-black text-white flex items-center gap-2">
                           <Cpu className="w-5 h-5 text-red-500 animate-pulse" />
@@ -3936,13 +4110,21 @@ export default function App() {
                         </div>
                       </div>
                     </div>
+                  </motion.div>
+                )}
 
-                  </div>
+                {c4Tab === 'dispatch' && (
+                  <motion.div
+                    key="dispatch"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full text-left"
+                  >
+                    {/* LEFT SIDE of dispatch (6 cols) */}
+                    <div className="lg:col-span-6 space-y-6">
 
-                  {/* RIGHT CONSOLE COLUMN: REPORTS, PERMISSIONS & ACCOUNT MANAGEMENT (4 Cols) */}
-                  <div className="lg:col-span-4 space-y-6">
-
-                    {/* VoIP Active Dial Modal Widget */}
+                      {/* VoIP Active Dial Modal Widget */}
                     <AnimatePresence>
                       {activeVoipCall && (
                         <motion.div
@@ -4122,8 +4304,11 @@ export default function App() {
                       )}
                     </div>
 
-                    {/* 5. Control de Permisos y Cuentas de Personal */}
-                    <div className="bg-[#000000]/80 border border-white/[0.08] p-5.5 rounded-[28px] backdrop-blur-md shadow-xl space-y-4">
+                    {/* RIGHT SIDE of dispatch (6 cols) */}
+                    <div className="lg:col-span-6 space-y-6">
+                      
+                      {/* 5. Control de Permisos y Cuentas de Personal */}
+                      <div className="bg-[#000000]/80 border border-white/[0.08] p-5.5 rounded-[28px] backdrop-blur-md shadow-xl space-y-4">
                       <div className="border-b border-white/[0.05] pb-3.5">
                         <h4 className="text-xs font-black text-white flex items-center gap-2">
                           <Settings className="w-4 h-4 text-emerald-400" />
@@ -4305,11 +4490,8 @@ export default function App() {
                           </label>
                         </div>
                       </div>
-
                     </div>
-
                   </div>
-
                 </div>
 
                 {/* CENTRAL TELEMETRY TERMINAL SIDEBAR */}
@@ -4349,16 +4531,64 @@ export default function App() {
 
               </motion.div>
             )}
+          </AnimatePresence>
+
+          {/* ELEGANT FLOATING BOTTOM NAVIGATION BAR FOR C4 CENTRAL */}
+          <div className="fixed bottom-6 inset-x-0 mx-auto max-w-sm px-4 z-40">
+            <div className="bg-slate-950/90 border border-white/[0.12] backdrop-blur-xl rounded-full p-1.5 flex items-center justify-between shadow-[0_15px_40px_rgba(0,0,0,0.9)]">
+              <button
+                type="button"
+                onClick={() => setC4Tab('monitoring')}
+                className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-full transition-all cursor-pointer ${
+                  c4Tab === 'monitoring' 
+                    ? 'bg-blue-500 text-white font-black shadow-[0_4px_12px_rgba(59,130,246,0.3)]' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Map className="w-4 h-4" />
+                <span className="text-[9px] font-black tracking-wider uppercase">Monitoreo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setC4Tab('ia_filter')}
+                className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-full transition-all cursor-pointer ${
+                  c4Tab === 'ia_filter' 
+                    ? 'bg-blue-500 text-white font-black shadow-[0_4px_12px_rgba(59,130,246,0.3)]' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Radio className="w-4 h-4" />
+                <span className="text-[9px] font-black tracking-wider uppercase">Filtro IA</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setC4Tab('dispatch')}
+                className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-full transition-all cursor-pointer ${
+                  c4Tab === 'dispatch' 
+                    ? 'bg-blue-500 text-white font-black shadow-[0_4px_12px_rgba(59,130,246,0.3)]' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Settings className="w-4 h-4" />
+                <span className="text-[9px] font-black tracking-wider uppercase">Gestión</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      )}
 
           </div>
         )}
       </main>
 
       {/* SYSTEM LOGS & METRICS FOOTER */}
-      <footer className="relative z-10 w-full bg-slate-950/60 border-t border-white/[0.05] p-5 text-center mt-auto">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] text-slate-500 font-semibold tracking-wide uppercase">
-          <div>ENTORNO SEGURO DE SEGURIDAD PÚBLICA • COBERTURA GUBERNAMENTAL • ESTADO DE HIDALGO, MÉXICO</div>
-          <div className="flex items-center gap-5">
+      <footer className="relative z-10 w-full bg-slate-950/60 border-t border-white/[0.05] pt-6 px-6 pb-44 text-center mt-auto">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-[9px] md:text-[10px] text-slate-500 font-semibold tracking-wide uppercase">
+          <div className="leading-relaxed">ENTORNO SEGURO DE SEGURIDAD PÚBLICA • COBERTURA GUBERNAMENTAL • ESTADO DE HIDALGO, MÉXICO</div>
+          <div className="flex flex-wrap items-center justify-center gap-3 md:gap-5">
             <span className="flex items-center gap-1.5 font-sans">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span>SISTEMA AUDITADO</span>
