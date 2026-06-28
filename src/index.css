@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Key brand color accents - Updated for Vibrant Palette Theme */
+  --color-brand-red: #FF3B30;
+  --color-brand-fire: #D0021B;
+  --color-brand-dark: #080808;
+  --color-brand-card: rgba(255, 255, 255, 0.05);
+  --color-brand-green: #00FF88;
+}
+
+@layer utilities {
+  /* Glowing / Neon Fire text and button glow effects - Updated for Vibrant Palette */
+  .shadow-neon-red {
+    box-shadow: 0 0 25px rgba(255, 59, 48, 0.4), 0 0 50px rgba(255, 59, 48, 0.2);
+  }
+  .shadow-neon-red-lg {
+    box-shadow: 0 0 40px rgba(255, 59, 48, 0.65), inset 0 4px 10px rgba(255,255,255,0.3);
+  }
+  .shadow-neon-green {
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+  }
+  
+  /* Gradiente radial de fondo del simulador */
+  .vibrant-bg-gradient {
+    background: radial-gradient(circle at top right, #1a1a1a 0%, #080808 100%);
+  }
+
+  /* Badge protegido - Vibrant Palette */
+  .vibrant-protected-badge {
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+  }
+
+  /* Botón de pánico gradiente */
+  .vibrant-panic-gradient {
+    background: linear-gradient(145deg, #FF3B30, #D0021B);
+  }
+
+  /* Standard modern animations */
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(0.95);
+      opacity: 0.8;
+    }
+    50% {
+      transform: scale(1.15);
+      opacity: 0.3;
+    }
+    100% {
+      transform: scale(1.3);
+      opacity: 0;
+    }
+  }
+
+  .animate-pulse-ring {
+    animation: pulse-ring 2s cubic-bezier(0.215, 0.610, 0.355, 1) infinite;
+  }
+}
+

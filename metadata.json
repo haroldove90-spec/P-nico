@@ -1,0 +1,10 @@
+{
+  "name": "Hidalgo Alerta Ciudadana",
+  "description": "Pantalla principal de la App Móvil del Ciudadano para el proyecto de seguridad en Hidalgo con Botón de Pánico, Acompañame y Contactos Seguros.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
