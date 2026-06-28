@@ -12,7 +12,6 @@ import {
   TextInput,
   ScrollView
 } from 'react-native';
-// Iconos de Lucide para React Native
 import { 
   ShieldAlert, 
   Navigation, 
@@ -31,60 +30,62 @@ import {
   Send 
 } from 'lucide-react-native';
 
-const { width, height } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
-// Tipos para el estado del agente y alertas de C4
 type ActiveRole = 'ciudadano' | 'agente' | 'c4';
 
 export default function RolesHubScreen() {
   const [activeRole, setActiveRole] = useState<ActiveRole>('ciudadano');
   
   // ==========================================
-  // ESTADOS COMUNES / SIMULACIÓN
+  // ESTADOS Y EVENTOS SIMULADOS
   // ==========================================
+  // Rol: Ciudadano
   const [panicActive, setPanicActive] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [companionActive, setCompanionActive] = useState(false);
+  
+  // Rol: Agente
   const [agentActive, setAgentActive] = useState(true);
   const [alertAccepted, setAlertAccepted] = useState(false);
   const [closingReport, setClosingReport] = useState('');
   const [reportSubmitted, setReportSubmitted] = useState(false);
-  
-  // Animaciones de radar y respiración de botón
+
+  // Animaciones
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const radarAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Animación de respiración del botón central S.O.S.
+    // Respiración del botón central
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.06,
-          duration: 1500,
+          toValue: 1.05,
+          duration: 1400,
           useNativeDriver: true,
           easing: Easing.inOut(Easing.ease),
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 1500,
+          duration: 1400,
           useNativeDriver: true,
           easing: Easing.inOut(Easing.ease),
         }),
       ])
     ).start();
 
-    // Animación de onda de radar constante
+    // Radar constante del indicador GPS
     Animated.loop(
       Animated.timing(radarAnim, {
         toValue: 1,
-        duration: 2200,
+        duration: 2000,
         useNativeDriver: true,
         easing: Easing.out(Easing.ease),
       })
     ).start();
-  }, []);
+  }, [pulseAnim, radarAnim]);
 
-  // Contador para S.O.S
+  // Manejo del contador SOS
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (panicActive && countdown > 0) {
@@ -95,7 +96,7 @@ export default function RolesHubScreen() {
     return () => clearTimeout(timer);
   }, [panicActive, countdown]);
 
-  const handlePanicPress = () => {
+  const handlePanicToggle = () => {
     if (panicActive) {
       setPanicActive(false);
       setCountdown(5);
@@ -105,10 +106,21 @@ export default function RolesHubScreen() {
     }
   };
 
-  // Interpolación de ondas del radar
+  const handleSendReport = () => {
+    if (closingReport.trim()) {
+      setReportSubmitted(true);
+      setTimeout(() => {
+        setClosingReport('');
+        setReportSubmitted(false);
+        setAlertAccepted(false);
+      }, 2500);
+    }
+  };
+
+  // Interpolación radar
   const radarScale = radarAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 2.4],
+    outputRange: [1, 2.3],
   });
 
   const radarOpacity = radarAnim.interpolate({
@@ -116,256 +128,243 @@ export default function RolesHubScreen() {
     outputRange: [0.6, 0],
   });
 
-  // Enviar reporte de agente
-  const handleSubmitReport = () => {
-    if (closingReport.trim()) {
-      setReportSubmitted(true);
-      setTimeout(() => {
-        setClosingReport('');
-        setReportSubmitted(false);
-        setAlertAccepted(false);
-      }, 3000);
-    }
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#080808" />
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#030712" />
       
-      {/* HEADER SELECTOR DE ROL SUPERIOR */}
+      {/* SELECTOR DE ROL SUPERIOR SEGMENTADO */}
       <View style={styles.roleSelectorContainer}>
-        <Text style={styles.hubTitle}>HIDALGO ALERTA HUB</Text>
-        <Text style={styles.hubSubtitle}>Demostración Interactiva Multi-Rol</Text>
+        <Text style={styles.hubTitle}>HIDALGO ALERTA</Text>
+        <Text style={styles.hubSubtitle}>Centro de Control de Enlaces Digitales</Text>
         
-        <View style={styles.tabsWrapper}>
+        <View style={styles.segmentedControl}>
           <TouchableOpacity 
-            style={[styles.roleTab, activeRole === 'ciudadano' && styles.roleTabActive]}
+            style={[styles.segmentButton, activeRole === 'ciudadano' && styles.segmentButtonActive]}
             onPress={() => setActiveRole('ciudadano')}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <User size={14} color={activeRole === 'ciudadano' ? '#FFFFFF' : 'rgba(255,255,255,0.4)'} />
-            <Text style={[styles.roleTabText, activeRole === 'ciudadano' && styles.roleTabTextActive]}>
+            <User size={14} color={activeRole === 'ciudadano' ? '#030712' : '#9CA3AF'} />
+            <Text style={[styles.segmentText, activeRole === 'ciudadano' && styles.segmentTextActive]}>
               Ciudadano
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.roleTab, activeRole === 'agente' && styles.roleTabActive]}
+            style={[styles.segmentButton, activeRole === 'agente' && styles.segmentButtonActive]}
             onPress={() => setActiveRole('agente')}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Shield size={14} color={activeRole === 'agente' ? '#FFFFFF' : 'rgba(255,255,255,0.4)'} />
-            <Text style={[styles.roleTabText, activeRole === 'agente' && styles.roleTabTextActive]}>
+            <Shield size={14} color={activeRole === 'agente' ? '#030712' : '#9CA3AF'} />
+            <Text style={[styles.segmentText, activeRole === 'agente' && styles.segmentTextActive]}>
               Agente
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.roleTab, activeRole === 'c4' && styles.roleTabActive]}
+            style={[styles.segmentButton, activeRole === 'c4' && styles.segmentButtonActive]}
             onPress={() => setActiveRole('c4')}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Radio size={14} color={activeRole === 'c4' ? '#FFFFFF' : 'rgba(255,255,255,0.4)'} />
-            <Text style={[styles.roleTabText, activeRole === 'c4' && styles.roleTabTextActive]}>
+            <Radio size={14} color={activeRole === 'c4' ? '#030712' : '#9CA3AF'} />
+            <Text style={[styles.segmentText, activeRole === 'c4' && styles.segmentTextActive]}>
               C4 Central
             </Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* CONTENIDO SEGÚN ROL ACTIVO */}
+      {/* CONTENIDO SCROLLABLE DE CADA ROL */}
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* ==========================================
-            VISTA 1: CIUDADANO (App Móvil)
-            ========================================== */}
+        {/* ==================== VISTA 1: CIUDADANO ==================== */}
         {activeRole === 'ciudadano' && (
           <View style={styles.viewContainer}>
-            {/* Indicador de GPS Superior */}
-            <View style={styles.gpsIndicatorRow}>
-              <View style={styles.protectedBadge}>
-                <View style={styles.gpsIconContainer}>
-                  <Animated.View style={[styles.radarWave, { transform: [{ scale: radarScale }], opacity: radarOpacity }]} />
-                  <View style={[styles.pulseDot, panicActive ? styles.pulseDotAlert : styles.pulseDotNormal]} />
+            {/* Indicador GPS Superior */}
+            <View style={styles.gpsRow}>
+              <View style={styles.gpsBadge}>
+                <View style={styles.gpsRadarContainer}>
+                  <Animated.View style={[styles.radarCircle, { transform: [{ scale: radarScale }], opacity: radarOpacity }]} />
+                  <View style={[styles.gpsDot, panicActive ? styles.gpsDotAlert : styles.gpsDotSafe]} />
                 </View>
-                <Text style={styles.protectedText}>
-                  Estado: <Text style={panicActive ? styles.textAlert : styles.textSuccess}>{panicActive ? `Alerta Activa (${countdown}s)` : 'Protegido'}</Text>
+                <Text style={styles.gpsText}>
+                  Estado: <Text style={panicActive ? styles.textRedNeon : styles.textGreenNeon}>{panicActive ? `Alerta Activa (${countdown}s)` : 'Protegido (Pachuca, Hgo)'}</Text>
                 </Text>
               </View>
-              <Text style={styles.locationLabel}>Pachuca, Hgo</Text>
+              <Text style={styles.trackingStatus}>{panicActive ? 'GPS Activo' : 'Satelital'}</Text>
             </View>
 
-            {/* Gran Botón de Pánico Central */}
-            <View style={styles.panicButtonSection}>
+            {/* Botón de Pánico Central */}
+            <View style={styles.panicContainer}>
               <Animated.View style={[
-                styles.glowBackdrop, 
-                panicActive ? styles.glowBackdropAlert : styles.glowBackdropNormal,
+                styles.panicGlowBackdrop,
+                panicActive ? styles.panicGlowBackdropActive : styles.panicGlowBackdropNormal,
                 { transform: [{ scale: pulseAnim }] }
               ]} />
               
               <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
                 <TouchableOpacity 
-                  onPress={handlePanicPress}
-                  activeOpacity={0.85} 
-                  style={[styles.sosButton, panicActive ? styles.sosButtonAlert : styles.sosButtonNormal]}
+                  onPress={handlePanicToggle}
+                  activeOpacity={0.85}
+                  style={[styles.panicButton, panicActive ? styles.panicButtonActive : styles.panicButtonNormal]}
                 >
-                  <ShieldAlert size={54} color="#FFFFFF" strokeWidth={2.2} />
-                  <Text style={styles.sosText}>S.O.S.</Text>
-                  <Text style={styles.sosSubtext}>
-                    {panicActive ? 'PRESIONA PARA CANCELAR' : 'MANTÉN PRESIONADO PARA ENVIAR'}
+                  <ShieldAlert size={screenWidth * 0.16} color="#FFFFFF" strokeWidth={2.2} />
+                  <Text style={styles.panicButtonTextSOS}>S.O.S.</Text>
+                  <Text style={styles.panicButtonActionText}>
+                    {panicActive ? 'PRESIONA PARA CANCELAR' : 'PRESIONAR'}
                   </Text>
                 </TouchableOpacity>
               </Animated.View>
             </View>
 
-            {/* Tarjeta Acompáñame */}
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardHeaderLeft}>
-                  <View style={styles.cardIconBox}>
-                    <Navigation size={18} color="#FF9500" />
-                  </View>
-                  <View>
-                    <Text style={styles.cardTitle}>Acompáñame</Text>
-                    <Text style={styles.cardSubtitle}>Monitoreo estético de ruta en vivo</Text>
-                  </View>
+            {/* Tarjeta Inferior Flotante */}
+            <View style={styles.cardContainer}>
+              {/* Sección Acompáñame */}
+              <View style={styles.acompaneHeader}>
+                <View style={styles.acompaneIconBox}>
+                  <Navigation size={18} color="#F59E0B" />
                 </View>
+                <View style={styles.acompaneTitleBox}>
+                  <Text style={styles.acompaneTitle}>Acompáñame</Text>
+                  <Text style={styles.acompaneDesc}>Monitoreo estético de ruta en vivo</Text>
+                </View>
+                
+                {/* Switch interactivo de Acompáñame */}
                 <TouchableOpacity 
-                  style={[styles.toggleSwitch, companionActive ? styles.toggleSwitchOn : styles.toggleSwitchOff]}
-                  onPress={() => setCompanionActive(!companionActive)}
                   activeOpacity={0.8}
+                  onPress={() => setCompanionActive(!companionActive)}
+                  style={[styles.customSwitch, companionActive ? styles.customSwitchOn : styles.customSwitchOff]}
                 >
-                  <View style={[styles.toggleCircle, companionActive ? styles.toggleCircleOn : styles.toggleCircleOff]} />
+                  <View style={[styles.customSwitchThumb, companionActive ? styles.customSwitchThumbOn : styles.customSwitchThumbOff]} />
                 </TouchableOpacity>
               </View>
 
-              {/* Slider track visual */}
+              {/* Slider Track Estético */}
               <View style={styles.sliderMockTrack}>
-                <View style={[styles.sliderMockProgress, { width: companionActive ? '100%' : '35%' }]} />
-                <View style={[styles.sliderMockThumb, { left: companionActive ? '92%' : '32%' }]}>
-                  <Navigation size={12} color="#080808" />
+                <View style={[styles.sliderMockProgress, { width: companionActive ? '100%' : '30%' }]} />
+                <View style={[styles.sliderMockThumb, { left: companionActive ? '90%' : '26%' }]}>
+                  <Navigation size={10} color="#030712" />
                 </View>
-                <Text style={styles.sliderMockText}>
-                  {companionActive ? 'Compartiendo ruta en tiempo real...' : 'Desliza para simular trayecto'}
+                <Text style={styles.sliderMockLabel}>
+                  {companionActive ? 'Geolocalizando trayecto activo...' : 'Desliza para simular trayecto'}
                 </Text>
               </View>
-            </View>
 
-            {/* Contactos de Confianza */}
-            <View style={styles.card}>
-              <Text style={styles.sectionLabel}>Contactos de Confianza</Text>
+              <View style={styles.divider} />
+
+              {/* Acceso Rápido a Contactos de Confianza */}
+              <Text style={styles.sectionTitle}>Contactos de Confianza</Text>
               <View style={styles.contactsGrid}>
                 {[
-                  { initials: 'MÁ', name: 'Mamá', color: '#FF9500' },
-                  { initials: 'PA', name: 'Papá', color: '#5856D6' },
-                  { initials: 'ES', name: 'Esposa', color: '#FF2D55' }
-                ].map((c, i) => (
-                  <View key={i} style={styles.contactItem}>
-                    <View style={[styles.contactAvatar, { borderColor: c.color }]}>
-                      <Text style={[styles.contactInitials, { color: c.color }]}>{c.initials}</Text>
-                      <View style={styles.contactOnlineDot} />
+                  { name: 'Mamá', initials: 'MÁ', color: '#EF4444' },
+                  { name: 'Papá', initials: 'PA', color: '#10B981' },
+                  { name: 'Esposa', initials: 'ES', color: '#3B82F6' },
+                ].map((contact, i) => (
+                  <View key={i} style={styles.contactCircleWrapper}>
+                    <View style={[styles.contactAvatarCircle, { borderColor: contact.color }]}>
+                      <Text style={[styles.contactInitials, { color: contact.color }]}>{contact.initials}</Text>
+                      <View style={styles.onlineDotIndicator} />
                     </View>
-                    <Text style={styles.contactName}>{c.name}</Text>
+                    <Text style={styles.contactNameLabel} numberOfLines={1}>{contact.name}</Text>
                   </View>
                 ))}
                 
-                <TouchableOpacity style={styles.addContactButton} activeOpacity={0.7}>
-                  <Plus size={20} color="rgba(255,255,255,0.4)" />
-                  <Text style={styles.addContactText}>Nuevo</Text>
+                <TouchableOpacity style={styles.addContactCircleButton} activeOpacity={0.7}>
+                  <Plus size={16} color="rgba(255,255,255,0.4)" />
+                  <Text style={styles.addContactLabel}>Añadir</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         )}
 
-        {/* ==========================================
-            VISTA 2: AGENTE DE SEGURIDAD
-            ========================================== */}
+        {/* ==================== VISTA 2: AGENTE DE SEGURIDAD ==================== */}
         {activeRole === 'agente' && (
           <View style={styles.viewContainer}>
             {/* Cabecera del Oficial */}
-            <View style={styles.officerHeader}>
-              <View style={styles.officerInfo}>
-                <View style={styles.officerAvatarBox}>
-                  <Shield size={20} color="#00FF88" />
+            <View style={styles.officerCard}>
+              <View style={styles.officerProfileRow}>
+                <View style={styles.officerAvatarWrapper}>
+                  <Shield size={18} color="#10B981" />
                 </View>
-                <View>
-                  <Text style={styles.officerName}>Oficial: Unidad 04</Text>
-                  <Text style={[styles.officerStatus, agentActive ? styles.textSuccess : styles.textMuted]}>
-                    {agentActive ? 'Patrullaje Activo' : 'Fuera de Servicio'}
+                <View style={styles.officerTextContainer}>
+                  <Text style={styles.officerTitle}>Oficial: Unidad 04</Text>
+                  <Text style={[styles.officerStatusText, agentActive ? styles.textGreenNeon : styles.textGray]}>
+                    {agentActive ? 'Estado: Activo' : 'Estado: Inactivo'}
                   </Text>
                 </View>
               </View>
+              
+              {/* Switch Funcional de Estado */}
               <TouchableOpacity 
-                style={[styles.toggleSwitch, agentActive ? styles.toggleSwitchOn : styles.toggleSwitchOff]}
-                onPress={() => setAgentActive(!agentActive)}
                 activeOpacity={0.8}
+                onPress={() => setAgentActive(!agentActive)}
+                style={[styles.customSwitch, agentActive ? styles.customSwitchOn : styles.customSwitchOff]}
               >
-                <View style={[styles.toggleCircle, agentActive ? styles.toggleCircleOn : styles.toggleCircleOff]} />
+                <View style={[styles.customSwitchThumb, agentActive ? styles.customSwitchThumbOn : styles.customSwitchThumbOff]} />
               </TouchableOpacity>
             </View>
 
-            {/* Alerta Recibida por Proximidad (Tarjeta Flotante Simulada) */}
-            <View style={[styles.alertFloatingCard, alertAccepted && styles.alertFloatingCardAccepted]}>
-              <View style={styles.alertHeaderRow}>
-                <View style={styles.alertBadge}>
-                  <AlertTriangle size={14} color="#FF3B30" />
-                  <Text style={styles.alertBadgeText}>ALERTA EN PROGRESO</Text>
+            {/* Alerta Recibida por Proximidad (Tarjeta Flotante Roja/Naranja Neón) */}
+            <View style={[styles.incomingAlertCard, alertAccepted && styles.incomingAlertCardAccepted]}>
+              <View style={styles.alertHeader}>
+                <View style={styles.alertHeaderBadge}>
+                  <AlertTriangle size={12} color="#EF4444" />
+                  <Text style={styles.alertHeaderBadgeText}>INCIDENTE EN PROGRESO</Text>
                 </View>
-                <Text style={styles.alertDistance}>A 1.2 km de distancia</Text>
+                <Text style={styles.alertDistanceText}>A 1.2 km de distancia</Text>
               </View>
 
-              <Text style={styles.alertVictimTitle}>Víctima: Rosa María Gómez</Text>
-              <Text style={styles.alertLocationText}>Ubicación: Av. Juárez esq. Guerrero, Pachuca Centro</Text>
+              <Text style={styles.alertVictimName}>Víctima: Rosa María Gómez</Text>
+              <Text style={styles.alertAddress}>Dirección: Av. Juárez esq. Guerrero, Pachuca Centro</Text>
 
-              {/* Botones de acción */}
+              {/* Botones Interactivos de la Alerta */}
               {!alertAccepted ? (
-                <View style={styles.actionButtonRow}>
+                <View style={styles.alertActionsRow}>
                   <TouchableOpacity 
-                    style={styles.declineButton} 
-                    onPress={() => alert('Alerta delegada a otra unidad')}
+                    style={styles.alertDeclineBtn}
+                    onPress={() => alert('Alerta de proximidad delegada al centro C5i.')}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.declineButtonText}>Delegar</Text>
+                    <Text style={styles.alertDeclineBtnText}>Delegar</Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
-                    style={styles.acceptButton} 
+                    style={styles.alertAcceptBtn}
                     onPress={() => setAlertAccepted(true)}
                     activeOpacity={0.8}
                   >
-                    <CheckCircle2 size={16} color="#FFFFFF" />
-                    <Text style={styles.acceptButtonText}>Aceptar Servicio</Text>
+                    <CheckCircle2 size={14} color="#030712" />
+                    <Text style={styles.alertAcceptBtnText}>Aceptar Servicio</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <View style={styles.acceptedBanner}>
-                  <View style={styles.acceptedStatusLeft}>
-                    <View style={styles.pulseDotAlert} />
-                    <Text style={styles.acceptedStatusText}>Unidad en ruta de respuesta rápida</Text>
+                <View style={styles.acceptedAlertContainer}>
+                  <View style={styles.acceptedAlertIndicatorRow}>
+                    <View style={styles.alertMiniPulseDot} />
+                    <Text style={styles.acceptedAlertIndicatorLabel}>En ruta de atención rápida</Text>
                   </View>
                   <TouchableOpacity 
-                    style={styles.gpsRouteButton}
-                    onPress={() => alert('Simulando navegación por GPS guiada al punto de incidente...')}
+                    style={styles.routeGpsBtn}
+                    onPress={() => alert('Calculando ruta satelital guiada hacia Av. Juárez...')}
                     activeOpacity={0.8}
                   >
-                    <Navigation size={14} color="#FFFFFF" />
-                    <Text style={styles.gpsRouteButtonText}>Ver Ruta GPS</Text>
+                    <Navigation size={14} color="#030712" />
+                    <Text style={styles.routeGpsBtnText}>Ver Ruta GPS</Text>
                   </TouchableOpacity>
                 </View>
               )}
             </View>
 
-            {/* Reporte de Cierre Rápido */}
-            <View style={styles.card}>
-              <View style={styles.formHeader}>
-                <FileText size={18} color="#00FF88" />
-                <Text style={styles.formTitle}>Reporte de Cierre de Alerta</Text>
+            {/* Formulario de Reporte de Cierre */}
+            <View style={styles.reportFormCard}>
+              <View style={styles.formTitleRow}>
+                <FileText size={16} color="#10B981" />
+                <Text style={styles.formTitleLabel}>Reporte Técnico de Cierre</Text>
               </View>
               
-              <Text style={styles.formLabel}>Describe brevemente el resultado del servicio:</Text>
+              <Text style={styles.fieldLabel}>Evidencias o Diagnóstico del Reporte:</Text>
               <TextInput
-                style={styles.textInput}
-                placeholder="Ej. Falsa alarma, riña controlada, traslado médico concluido..."
+                style={styles.formTextInput}
+                placeholder="Ej. Riña dispersada, falsa alarma del botón, traslado completado..."
                 placeholderTextColor="rgba(255,255,255,0.25)"
                 value={closingReport}
                 onChangeText={setClosingReport}
@@ -375,135 +374,127 @@ export default function RolesHubScreen() {
 
               <TouchableOpacity 
                 style={[
-                  styles.submitButton, 
-                  (!closingReport.trim() || reportSubmitted) && styles.submitButtonDisabled
+                  styles.formSubmitButton, 
+                  (!closingReport.trim() || reportSubmitted) && styles.formSubmitButtonDisabled
                 ]}
-                onPress={handleSubmitReport}
+                onPress={handleSendReport}
                 disabled={!closingReport.trim() || reportSubmitted}
                 activeOpacity={0.8}
               >
                 {reportSubmitted ? (
-                  <CheckCircle2 size={16} color="#080808" />
+                  <CheckCircle2 size={14} color="#030712" />
                 ) : (
-                  <Send size={16} color="#080808" />
+                  <Send size={14} color="#030712" />
                 )}
-                <Text style={styles.submitButtonText}>
-                  {reportSubmitted ? 'Reporte Enviado Exitosamente' : 'Enviar Evidencia de Cierre'}
+                <Text style={styles.formSubmitButtonText}>
+                  {reportSubmitted ? 'Reporte Enviado con Éxito' : 'Enviar Reporte al C5i'}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
 
-        {/* ==========================================
-            VISTA 3: CENTRAL C4 / C5i
-            ========================================== */}
+        {/* ==================== VISTA 3: CENTRAL C4 / C5i ==================== */}
         {activeRole === 'c4' && (
           <View style={styles.viewContainer}>
-            {/* Métricas Rápidas KPI */}
-            <View style={styles.kpiRow}>
-              <View style={styles.kpiCard}>
-                <Clock size={16} color="#FF3B30" />
-                <View style={styles.kpiContent}>
-                  <Text style={styles.kpiValue}>4.2 min</Text>
-                  <Text style={styles.kpiLabel}>Tiempo de Reacción</Text>
-                </View>
-              </View>
-              
-              <View style={styles.kpiCard}>
-                <TrendingUp size={16} color="#00FF88" />
-                <View style={styles.kpiContent}>
-                  <Text style={styles.kpiValue}>18</Text>
-                  <Text style={styles.kpiLabel}>Oficiales Activos</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Mapa de Incidentes Simulado */}
-            <View style={styles.mapContainer}>
-              <View style={styles.mapHeader}>
-                <View style={styles.mapTitleLeft}>
-                  <Activity size={14} color="#FF3B30" />
-                  <Text style={styles.mapTitle}>Mapa Operativo C5i Pachuca</Text>
-                </View>
-                <View style={styles.liveIndicator}>
-                  <View style={styles.liveDot} />
-                  <Text style={styles.liveText}>EN VIVO</Text>
+            {/* Tarjetas de KPIs lado a lado */}
+            <View style={styles.kpiGrid}>
+              <View style={styles.kpiMiniCard}>
+                <Clock size={16} color="#EF4444" />
+                <View style={styles.kpiTextCol}>
+                  <Text style={styles.kpiValueText}>4.2 min</Text>
+                  <Text style={styles.kpiLabelText}>Tiempo Reacción</Text>
                 </View>
               </View>
 
-              {/* Lienzo simulación de mapa satelital */}
-              <View style={styles.mapCanvas}>
-                {/* Cuadrículas e indicadores abstractos */}
-                <View style={styles.gridLineH1} />
-                <View style={styles.gridLineH2} />
-                <View style={styles.gridLineV1} />
-                <View style={styles.gridLineV2} />
-                
-                {/* Patrulla 1 */}
-                <View style={[styles.mapMarker, { top: '35%', left: '20%' }]}>
-                  <View style={styles.patrolMarkerDot} />
-                  <Text style={styles.markerLabel}>U-04</Text>
+              <View style={styles.kpiMiniCard}>
+                <TrendingUp size={16} color="#10B981" />
+                <View style={styles.kpiTextCol}>
+                  <Text style={styles.kpiValueText}>18</Text>
+                  <Text style={styles.kpiLabelText}>Oficiales Activos</Text>
                 </View>
-
-                {/* Patrulla 2 */}
-                <View style={[styles.mapMarker, { top: '65%', left: '75%' }]}>
-                  <View style={styles.patrolMarkerDot} />
-                  <Text style={styles.markerLabel}>U-12</Text>
-                </View>
-
-                {/* Alerta Crítica Activa */}
-                <View style={[styles.mapMarker, { top: '48%', left: '55%' }]}>
-                  <View style={styles.alertMarkerRing} />
-                  <View style={styles.alertMarkerDot} />
-                  <Text style={styles.alertMarkerLabel}>S.O.S ACTIVO</Text>
-                </View>
-
-                <Text style={styles.mapScaleText}>Escala: Pachuca Centro • 500m</Text>
               </View>
             </View>
 
-            {/* Lista de Alertas en Tiempo Real */}
-            <View style={styles.card}>
-              <Text style={styles.tableTitle}>Monitoreo de Alertas Recientes</Text>
+            {/* Simulación del Mapa de Incidentes en Vivo */}
+            <View style={styles.mapWidgetContainer}>
+              <View style={styles.mapWidgetHeader}>
+                <View style={styles.mapWidgetHeaderLeft}>
+                  <Activity size={14} color="#EF4444" />
+                  <Text style={styles.mapWidgetTitle}>Mapa Operativo C5i</Text>
+                </View>
+                <View style={styles.liveBadge}>
+                  <View style={styles.livePulseDot} />
+                  <Text style={styles.liveBadgeLabel}>EN VIVO</Text>
+                </View>
+              </View>
+
+              <View style={styles.mapVisualCanvas}>
+                {/* Cuadrículas abstractas */}
+                <View style={styles.mapGridLineH1} />
+                <View style={styles.mapGridLineH2} />
+                <View style={styles.mapGridLineV1} />
+                <View style={styles.mapGridLineV2} />
+
+                {/* Marcador Patrulla 04 */}
+                <View style={[styles.mapMarkerPin, { top: '30%', left: '25%' }]}>
+                  <View style={styles.patrolPoint} />
+                  <Text style={styles.patrolLabel}>U-04</Text>
+                </View>
+
+                {/* Marcador Patrulla 12 */}
+                <View style={[styles.mapMarkerPin, { top: '70%', left: '72%' }]}>
+                  <View style={styles.patrolPoint} />
+                  <Text style={styles.patrolLabel}>U-12</Text>
+                </View>
+
+                {/* Marcador SOS Crítico Activo */}
+                <View style={[styles.mapMarkerPin, { top: '50%', left: '50%' }]}>
+                  <View style={styles.sosMarkerRing} />
+                  <View style={styles.sosMarkerPoint} />
+                  <Text style={styles.sosMarkerLabel}>S.O.S.</Text>
+                </View>
+
+                <Text style={styles.mapScaleLabel}>Región Hidalgo Centro • 1.5km</Text>
+              </View>
+            </View>
+
+            {/* Tabla de Alertas en Tiempo Real */}
+            <View style={styles.tableWidgetCard}>
+              <Text style={styles.tableWidgetTitle}>Monitoreo General de Alertas</Text>
               
-              {/* Tabla minimalista simulada */}
-              <View style={styles.table}>
-                {/* Header */}
-                <View style={styles.tableHeader}>
-                  <Text style={[styles.tableCol, { flex: 1.2 }]}>Usuario</Text>
-                  <Text style={[styles.tableCol, { flex: 1.5 }]}>Ubicación</Text>
-                  <Text style={[styles.tableCol, { flex: 0.9 }]}>Respuesta</Text>
-                  <Text style={[styles.tableCol, { flex: 1, textAlign: 'right' }]}>Estado</Text>
+              <View style={styles.tableContainer}>
+                {/* Cabecera */}
+                <View style={styles.tableHeaderRow}>
+                  <Text style={[styles.tableHeadCell, { flex: 1.2 }]}>ID/Usuario</Text>
+                  <Text style={[styles.tableHeadCell, { flex: 1.6 }]}>Ubicación</Text>
+                  <Text style={[styles.tableHeadCell, { flex: 1, textAlign: 'right' }]}>Estado</Text>
                 </View>
 
-                {/* Fila 1 */}
-                <View style={styles.tableRow}>
-                  <Text style={[styles.tableCell, { flex: 1.2, fontWeight: '700' }]}>R. María</Text>
-                  <Text style={[styles.tableCell, { flex: 1.5 }]}>Pachuca Centro</Text>
-                  <Text style={[styles.tableCell, { flex: 0.9, color: '#FF9500' }]}>1.5 min</Text>
-                  <View style={[styles.tableCellBadge, { flex: 1, backgroundColor: 'rgba(255, 59, 48, 0.15)' }]}>
-                    <Text style={[styles.tableBadgeText, { color: '#FF3B30' }]}>Crítico</Text>
+                {/* Registro 1 */}
+                <View style={styles.tableDataRow}>
+                  <Text style={[styles.tableBodyCell, { flex: 1.2, color: '#FFFFFF', fontWeight: '700' }]}>R. Gómez</Text>
+                  <Text style={[styles.tableBodyCell, { flex: 1.6 }]}>Pachuca Centro</Text>
+                  <View style={[styles.badgeContainer, { flex: 1, backgroundColor: 'rgba(239,68,68,0.15)' }]}>
+                    <Text style={[styles.badgeLabel, { color: '#EF4444' }]}>Crítico</Text>
                   </View>
                 </View>
 
-                {/* Fila 2 */}
-                <View style={styles.tableRow}>
-                  <Text style={[styles.tableCell, { flex: 1.2, fontWeight: '700' }]}>J. Ortega</Text>
-                  <Text style={[styles.tableCell, { flex: 1.5 }]}>Plaza Q</Text>
-                  <Text style={[styles.tableCell, { flex: 0.9, color: '#00FF88' }]}>3.8 min</Text>
-                  <View style={[styles.tableCellBadge, { flex: 1, backgroundColor: 'rgba(0, 255, 136, 0.15)' }]}>
-                    <Text style={[styles.tableBadgeText, { color: '#00FF88' }]}>Atendido</Text>
+                {/* Registro 2 */}
+                <View style={styles.tableDataRow}>
+                  <Text style={[styles.tableBodyCell, { flex: 1.2, color: '#FFFFFF', fontWeight: '700' }]}>J. Ortega</Text>
+                  <Text style={[styles.tableBodyCell, { flex: 1.6 }]}>Plaza Q</Text>
+                  <View style={[styles.badgeContainer, { flex: 1, backgroundColor: 'rgba(16,185,129,0.15)' }]}>
+                    <Text style={[styles.badgeLabel, { color: '#10B981' }]}>Cerrado</Text>
                   </View>
                 </View>
 
-                {/* Fila 3 */}
-                <View style={styles.tableRow}>
-                  <Text style={[styles.tableCell, { flex: 1.2, fontWeight: '700' }]}>A. Sánchez</Text>
-                  <Text style={[styles.tableCell, { flex: 1.5 }]}>Zorros Hgo</Text>
-                  <Text style={[styles.tableCell, { flex: 0.9, color: '#00FF88' }]}>4.1 min</Text>
-                  <View style={[styles.tableCellBadge, { flex: 1, backgroundColor: 'rgba(0, 255, 136, 0.15)' }]}>
-                    <Text style={[styles.tableBadgeText, { color: '#00FF88' }]}>Atendido</Text>
+                {/* Registro 3 */}
+                <View style={styles.tableDataRow}>
+                  <Text style={[styles.tableBodyCell, { flex: 1.2, color: '#FFFFFF', fontWeight: '700' }]}>M. Alarcón</Text>
+                  <Text style={[styles.tableBodyCell, { flex: 1.6 }]}>Zorros Hgo</Text>
+                  <View style={[styles.badgeContainer, { flex: 1, backgroundColor: 'rgba(16,185,129,0.15)' }]}>
+                    <Text style={[styles.badgeLabel, { color: '#10B981' }]}>Atendido</Text>
                   </View>
                 </View>
               </View>
@@ -517,255 +508,253 @@ export default function RolesHubScreen() {
 }
 
 // ==========================================
-// ESTILOS DE REACT NATIVE (SHEET)
+// ESTILOS DE INTERFAZ PREMIUM
 // ==========================================
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#080808',
+    backgroundColor: '#030712',
   },
   roleSelectorContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
+    backgroundColor: '#070C1B',
     borderBottomWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: '#0B0C0E',
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   hubTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: 1.5,
+    letterSpacing: 1.8,
     textAlign: 'center',
   },
   hubSubtitle: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.4)',
+    color: '#9CA3AF',
     textAlign: 'center',
-    marginBottom: 14,
+    marginTop: 4,
+    marginBottom: 16,
     fontWeight: '500',
   },
-  tabsWrapper: {
+  segmentedControl: {
     flexDirection: 'row',
     backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 14,
+    borderRadius: 12,
     padding: 3,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
   },
-  roleTab: {
+  segmentButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 10,
-    borderRadius: 11,
+    borderRadius: 9,
   },
-  roleTabActive: {
-    backgroundColor: 'rgba(255, 59, 48, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 59, 48, 0.3)',
+  segmentButtonActive: {
+    backgroundColor: '#FFFFFF',
   },
-  roleTabText: {
+  segmentText: {
     fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.4)',
+    color: '#9CA3AF',
   },
-  roleTabTextActive: {
-    color: '#FFFFFF',
+  segmentTextActive: {
+    color: '#030712',
     fontWeight: '700',
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 18,
+    paddingTop: 16,
     paddingBottom: 40,
   },
   viewContainer: {
-    flexDirection: 'column',
-    gap: 16,
+    gap: 18,
   },
-  
-  // VISTA CIUDADANO STYLES
-  gpsIndicatorRow: {
+
+  // ESTILOS CIUDADANO
+  gpsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  protectedBadge: {
+  gpsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(0, 255, 136, 0.08)',
+    backgroundColor: 'rgba(16,185,129,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 136, 0.2)',
+    borderColor: 'rgba(16,185,129,0.2)',
     borderRadius: 99,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
-  gpsIconContainer: {
+  gpsRadarContainer: {
     width: 10,
     height: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  pulseDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  pulseDotNormal: {
-    backgroundColor: '#00FF88',
-  },
-  pulseDotAlert: {
-    backgroundColor: '#FF3B30',
-  },
-  radarWave: {
+  radarCircle: {
     position: 'absolute',
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: 'rgba(0, 255, 136, 0.4)',
+    backgroundColor: 'rgba(16,185,129,0.4)',
   },
-  protectedText: {
+  gpsDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  gpsDotSafe: {
+    backgroundColor: '#10B981',
+  },
+  gpsDotAlert: {
+    backgroundColor: '#EF4444',
+  },
+  gpsText: {
     fontSize: 11,
     color: '#FFFFFF',
     fontWeight: '600',
   },
-  textSuccess: {
-    color: '#00FF88',
+  textGreenNeon: {
+    color: '#10B981',
     fontWeight: '700',
   },
-  textAlert: {
-    color: '#FF3B30',
+  textRedNeon: {
+    color: '#EF4444',
     fontWeight: '700',
   },
-  locationLabel: {
+  trackingStatus: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.4)',
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    color: '#9CA3AF',
+    fontWeight: '500',
   },
-  panicButtonSection: {
-    height: height * 0.28,
+  panicContainer: {
+    height: screenWidth * 0.65,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
     marginVertical: 10,
   },
-  glowBackdrop: {
+  panicGlowBackdrop: {
     position: 'absolute',
-    width: width * 0.52,
-    height: width * 0.52,
-    borderRadius: (width * 0.52) / 2,
-    blurRadius: 40,
+    width: screenWidth * 0.58,
+    height: screenWidth * 0.58,
+    borderRadius: (screenWidth * 0.58) / 2,
+    opacity: 0.15,
   },
-  glowBackdropNormal: {
-    backgroundColor: 'rgba(255, 59, 48, 0.07)',
+  panicGlowBackdropNormal: {
+    backgroundColor: '#EF4444',
   },
-  glowBackdropAlert: {
-    backgroundColor: 'rgba(255, 59, 48, 0.22)',
+  panicGlowBackdropActive: {
+    backgroundColor: '#EF4444',
+    opacity: 0.35,
   },
-  sosButton: {
-    width: Math.min(width * 0.48, 190),
-    height: Math.min(width * 0.48, 190),
-    borderRadius: Math.min(width * 0.48, 190) / 2,
+  panicButton: {
+    width: screenWidth * 0.55,
+    height: screenWidth * 0.55,
+    borderRadius: (screenWidth * 0.55) / 2,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 4,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  sosButtonNormal: {
-    backgroundColor: '#FF3B30',
-    shadowColor: '#FF3B30',
+  panicButtonNormal: {
+    backgroundColor: '#EF4444',
+    shadowColor: '#EF4444',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
-    shadowRadius: 20,
+    shadowRadius: 18,
     elevation: 8,
   },
-  sosButtonAlert: {
-    backgroundColor: '#D0021B',
-    shadowColor: '#D0021B',
+  panicButtonActive: {
+    backgroundColor: '#DC2626',
+    shadowColor: '#DC2626',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.7,
-    shadowRadius: 25,
+    shadowRadius: 24,
     elevation: 10,
   },
-  sosText: {
+  panicButtonTextSOS: {
     fontSize: 32,
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: -0.5,
     marginTop: 4,
   },
-  sosSubtext: {
+  panicButtonActionText: {
     fontSize: 8,
-    color: 'rgba(255,255,255,0.75)',
+    color: 'rgba(255,255,255,0.8)',
     fontWeight: '700',
-    letterSpacing: 0.8,
+    letterSpacing: 1,
     textAlign: 'center',
-    paddingHorizontal: 16,
-    marginTop: 2,
+    marginTop: 4,
+    paddingHorizontal: 12,
   },
-  card: {
+  cardContainer: {
     backgroundColor: 'rgba(255,255,255,0.03)',
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
     padding: 16,
   },
-  cardHeader: {
+  acompaneHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  cardHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  cardIconBox: {
+  acompaneIconBox: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(255, 149, 0, 0.1)',
+    backgroundColor: 'rgba(245,158,11,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardTitle: {
+  acompaneTitleBox: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  acompaneTitle: {
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  cardSubtitle: {
+  acompaneDesc: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.4)',
+    color: '#9CA3AF',
     marginTop: 1,
   },
-  toggleSwitch: {
+  customSwitch: {
     width: 44,
     height: 24,
     borderRadius: 12,
     padding: 2,
     justifyContent: 'center',
   },
-  toggleSwitchOn: {
-    backgroundColor: '#00FF88',
+  customSwitchOn: {
+    backgroundColor: '#10B981',
   },
-  toggleSwitchOff: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+  customSwitchOff: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
-  toggleCircle: {
+  customSwitchThumb: {
     width: 20,
     height: 20,
     borderRadius: 10,
     backgroundColor: '#FFFFFF',
   },
-  toggleCircleOn: {
+  customSwitchThumbOn: {
     alignSelf: 'flex-end',
   },
-  toggleCircleOff: {
+  customSwitchThumbOff: {
     alignSelf: 'flex-start',
   },
   sliderMockTrack: {
@@ -783,7 +772,7 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 149, 0, 0.15)',
+    backgroundColor: 'rgba(245,158,11,0.15)',
     borderRadius: 20,
   },
   sliderMockThumb: {
@@ -794,22 +783,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
   },
-  sliderMockText: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.35)',
+  sliderMockLabel: {
+    fontSize: 10,
+    color: '#9CA3AF',
     fontWeight: '600',
     textAlign: 'center',
     width: '100%',
     zIndex: -1,
   },
-  sectionLabel: {
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginVertical: 16,
+  },
+  sectionTitle: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.4)',
+    color: '#9CA3AF',
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -819,13 +809,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
   },
-  contactItem: {
+  contactCircleWrapper: {
     alignItems: 'center',
     width: 60,
   },
-  contactAvatar: {
+  contactAvatarCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -839,43 +828,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  contactOnlineDot: {
+  onlineDotIndicator: {
     position: 'absolute',
     bottom: 0,
     right: 0,
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#00FF88',
+    backgroundColor: '#10B981',
     borderWidth: 2,
-    borderColor: '#080808',
+    borderColor: '#030712',
   },
-  contactName: {
+  contactNameLabel: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.5)',
+    color: '#9CA3AF',
     marginTop: 6,
     fontWeight: '500',
   },
-  addContactButton: {
+  addContactCircleButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.1)',
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addContactText: {
-    fontSize: 10,
+  addContactLabel: {
+    fontSize: 9,
     color: 'rgba(255,255,255,0.3)',
-    marginTop: 6,
+    marginTop: 4,
     fontWeight: '600',
   },
 
-  // VISTA AGENTE STYLES
-  officerHeader: {
+  // ESTILOS AGENTE
+  officerCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -885,84 +874,84 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
   },
-  officerInfo: {
+  officerProfileRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  officerAvatarBox: {
+  officerAvatarWrapper: {
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: 'rgba(0, 255, 136, 0.08)',
+    backgroundColor: 'rgba(16,185,129,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  officerName: {
+  officerTitle: {
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  officerStatus: {
+  officerStatusText: {
     fontSize: 10,
     fontWeight: '600',
     marginTop: 1,
   },
-  textMuted: {
-    color: 'rgba(255,255,255,0.4)',
+  textGray: {
+    color: '#9CA3AF',
   },
-  alertFloatingCard: {
-    backgroundColor: 'rgba(255, 59, 48, 0.06)',
+  incomingAlertCard: {
+    backgroundColor: 'rgba(239,68,68,0.06)',
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 59, 48, 0.25)',
+    borderColor: 'rgba(239,68,68,0.25)',
     padding: 16,
     gap: 12,
   },
-  alertFloatingCardAccepted: {
-    backgroundColor: 'rgba(0, 255, 136, 0.04)',
-    borderColor: 'rgba(0, 255, 136, 0.25)',
+  incomingAlertCardAccepted: {
+    backgroundColor: 'rgba(16,185,129,0.04)',
+    borderColor: 'rgba(16,185,129,0.25)',
   },
-  alertHeaderRow: {
+  alertHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  alertBadge: {
+  alertHeaderBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255, 59, 48, 0.15)',
+    backgroundColor: 'rgba(239,68,68,0.15)',
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 6,
   },
-  alertBadgeText: {
+  alertHeaderBadgeText: {
     fontSize: 9,
     fontWeight: '900',
-    color: '#FF3B30',
+    color: '#EF4444',
   },
-  alertDistance: {
+  alertDistanceText: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.5)',
+    color: '#9CA3AF',
     fontWeight: '600',
   },
-  alertVictimTitle: {
+  alertVictimName: {
     fontSize: 15,
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  alertLocationText: {
+  alertAddress: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.6)',
+    color: '#9CA3AF',
     lineHeight: 16,
   },
-  actionButtonRow: {
+  alertActionsRow: {
     flexDirection: 'row',
     gap: 10,
     marginTop: 4,
   },
-  declineButton: {
+  alertDeclineBtn: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
@@ -970,83 +959,86 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  declineButtonText: {
+  alertDeclineBtnText: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.6)',
     fontWeight: '700',
   },
-  acceptButton: {
+  alertAcceptBtn: {
     flex: 2.2,
     flexDirection: 'row',
     gap: 8,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#EF4444',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#FF3B30',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
-  acceptButtonText: {
+  alertAcceptBtnText: {
     fontSize: 12,
     color: '#FFFFFF',
     fontWeight: '800',
   },
-  acceptedBanner: {
+  acceptedAlertContainer: {
     flexDirection: 'column',
     gap: 10,
     marginTop: 4,
   },
-  acceptedStatusLeft: {
+  acceptedAlertIndicatorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  pulseDotAlert: {
+  alertMiniPulseDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#EF4444',
   },
-  acceptedStatusText: {
+  acceptedAlertIndicatorLabel: {
     fontSize: 12,
-    color: '#FF3B30',
+    color: '#EF4444',
     fontWeight: '700',
   },
-  gpsRouteButton: {
+  routeGpsBtn: {
     flexDirection: 'row',
     gap: 6,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#00FF88',
+    backgroundColor: '#10B981',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gpsRouteButtonText: {
+  routeGpsBtnText: {
     fontSize: 12,
-    color: '#080808',
+    color: '#030712',
     fontWeight: '800',
   },
-  formHeader: {
+  reportFormCard: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    padding: 16,
+  },
+  formTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     marginBottom: 12,
   },
-  formTitle: {
+  formTitleLabel: {
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  formLabel: {
+  fieldLabel: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.5)',
+    color: '#9CA3AF',
     marginBottom: 8,
     fontWeight: '600',
   },
-  textInput: {
+  formTextInput: {
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
@@ -1058,31 +1050,31 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     marginBottom: 12,
   },
-  submitButton: {
+  formSubmitButton: {
     flexDirection: 'row',
     gap: 8,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#00FF88',
+    backgroundColor: '#10B981',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  submitButtonDisabled: {
-    backgroundColor: 'rgba(0, 255, 136, 0.2)',
+  formSubmitButtonDisabled: {
+    backgroundColor: 'rgba(16,185,129,0.2)',
     opacity: 0.6,
   },
-  submitButtonText: {
+  formSubmitButtonText: {
     fontSize: 12,
-    color: '#080808',
+    color: '#030712',
     fontWeight: '800',
   },
 
-  // VISTA CENTRAL C4 STYLES
-  kpiRow: {
+  // ESTILOS CENTRAL C4
+  kpiGrid: {
     flexDirection: 'row',
     gap: 12,
   },
-  kpiCard: {
+  kpiMiniCard: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1093,28 +1085,28 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.06)',
     padding: 12,
   },
-  kpiContent: {
+  kpiTextCol: {
     flexDirection: 'column',
   },
-  kpiValue: {
+  kpiValueText: {
     fontSize: 15,
     fontWeight: '900',
     color: '#FFFFFF',
   },
-  kpiLabel: {
+  kpiLabelText: {
     fontSize: 9,
-    color: 'rgba(255,255,255,0.4)',
+    color: '#9CA3AF',
     marginTop: 2,
     fontWeight: '600',
   },
-  mapContainer: {
+  mapWidgetContainer: {
     backgroundColor: 'rgba(255,255,255,0.03)',
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
   },
-  mapHeader: {
+  mapWidgetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -1123,43 +1115,43 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.06)',
     backgroundColor: 'rgba(255,255,255,0.01)',
   },
-  mapTitleLeft: {
+  mapWidgetHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  mapTitle: {
+  mapWidgetTitle: {
     fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  liveIndicator: {
+  liveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    backgroundColor: 'rgba(239,68,68,0.1)',
     paddingVertical: 3,
     paddingHorizontal: 6,
     borderRadius: 4,
   },
-  liveDot: {
+  livePulseDot: {
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#EF4444',
   },
-  liveText: {
+  liveBadgeLabel: {
     fontSize: 8,
     fontWeight: '900',
-    color: '#FF3B30',
+    color: '#EF4444',
   },
-  mapCanvas: {
+  mapVisualCanvas: {
     height: 180,
-    backgroundColor: '#0F1012',
+    backgroundColor: '#070C1B',
     position: 'relative',
     overflow: 'hidden',
   },
-  gridLineH1: {
+  mapGridLineH1: {
     position: 'absolute',
     top: '33%',
     left: 0,
@@ -1167,7 +1159,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.03)',
   },
-  gridLineH2: {
+  mapGridLineH2: {
     position: 'absolute',
     top: '66%',
     left: 0,
@@ -1175,7 +1167,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.03)',
   },
-  gridLineV1: {
+  mapGridLineV1: {
     position: 'absolute',
     left: '33%',
     top: 0,
@@ -1183,7 +1175,7 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: 'rgba(255,255,255,0.03)',
   },
-  gridLineV2: {
+  mapGridLineV2: {
     position: 'absolute',
     left: '66%',
     top: 0,
@@ -1191,54 +1183,54 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: 'rgba(255,255,255,0.03)',
   },
-  mapMarker: {
+  mapMarkerPin: {
     position: 'absolute',
     alignItems: 'center',
   },
-  patrolMarkerDot: {
+  patrolPoint: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#00FF88',
-    shadowColor: '#00FF88',
+    backgroundColor: '#10B981',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 5,
   },
-  markerLabel: {
+  patrolLabel: {
     fontSize: 8,
-    color: '#00FF88',
+    color: '#10B981',
     fontWeight: '700',
     marginTop: 2,
-    backgroundColor: '#000000',
+    backgroundColor: '#030712',
     paddingHorizontal: 4,
     borderRadius: 3,
   },
-  alertMarkerRing: {
+  sosMarkerRing: {
     position: 'absolute',
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#FF3B30',
+    borderColor: '#EF4444',
     opacity: 0.6,
   },
-  alertMarkerDot: {
+  sosMarkerPoint: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#EF4444',
   },
-  alertMarkerLabel: {
+  sosMarkerLabel: {
     fontSize: 8,
-    color: '#FF3B30',
+    color: '#EF4444',
     fontWeight: '900',
     marginTop: 4,
-    backgroundColor: '#000000',
+    backgroundColor: '#030712',
     paddingHorizontal: 4,
     borderRadius: 3,
   },
-  mapScaleText: {
+  mapScaleLabel: {
     position: 'absolute',
     bottom: 8,
     right: 8,
@@ -1246,7 +1238,14 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.3)',
     fontWeight: '600',
   },
-  tableTitle: {
+  tableWidgetCard: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    padding: 16,
+  },
+  tableWidgetTitle: {
     fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
@@ -1254,40 +1253,40 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 12,
   },
-  table: {
+  tableContainer: {
     flexDirection: 'column',
     gap: 8,
   },
-  tableHeader: {
+  tableHeaderRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
     paddingBottom: 6,
   },
-  tableCol: {
+  tableHeadCell: {
     fontSize: 9,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.4)',
+    color: '#9CA3AF',
     textTransform: 'uppercase',
   },
-  tableRow: {
+  tableDataRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 4,
   },
-  tableCell: {
+  tableBodyCell: {
     fontSize: 11,
-    color: '#FFFFFF',
+    color: '#9CA3AF',
     fontWeight: '500',
   },
-  tableCellBadge: {
+  badgeContainer: {
     borderRadius: 6,
     paddingVertical: 2,
     paddingHorizontal: 6,
     alignSelf: 'flex-start',
     alignItems: 'center',
   },
-  tableBadgeText: {
+  badgeLabel: {
     fontSize: 8,
     fontWeight: '800',
   },

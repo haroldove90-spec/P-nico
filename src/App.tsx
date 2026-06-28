@@ -30,33 +30,13 @@ import {
   Send,
   User,
   FileText,
-  TrendingUp
+  TrendingUp,
+  LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-// El código fuente exacto de PanicScreen.tsx para mostrar en el inspector de código
-const reactNativeCode = `import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  Dimensions, 
-  Animated, 
-  Easing,
-  StatusBar,
-  SafeAreaView
-} from 'react-native';
-// Usamos Lucide para React Native si está disponible, o iconos nativos de Expo
-import { ShieldAlert, Navigation, Users } from 'lucide-react-native';
-
-const { width, height } = Dimensions.get('window');
-
-export default function PanicScreen() {
-  const [isActive, setIsActive] = useState(false);
-  const [countdown, setCountdown] = useState(5);
-  const [isCompanionActive, setIsCompanionActive] = useState(false);
-  
+// React Native production code strings removed as requested to clean up the interface and focus 100% on the live responsive web application.
+const reactNativeCode = `
   // Animaciones para pulsación del botón y radar GPS
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
   const radarAnim = React.useRef(new Animated.Value(0)).current;
@@ -730,6 +710,546 @@ const styles = StyleSheet.create({
   toggleCircleOff: { alignSelf: 'flex-start' }
 });`;
 
+const panicScreenCorrigidoCode = `import React, { useState, useEffect, useRef } from 'react';
+import { 
+  StyleSheet, 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  Dimensions, 
+  Animated, 
+  Easing,
+  StatusBar,
+  SafeAreaView
+} from 'react-native';
+import { Shield, ShieldAlert, Navigation, Users } from 'lucide-react-native';
+
+const { width: screenWidth } = Dimensions.get('window');
+const BUTTON_SIZE = screenWidth * 0.6;
+const BUTTON_RADIUS = BUTTON_SIZE / 2;
+
+export default function PanicScreenCorrigido() {
+  const [isActive, setIsActive] = useState(false);
+  const [countdown, setCountdown] = useState(5);
+  const [isCompanionActive, setIsCompanionActive] = useState(false);
+  
+  // Animaciones para pulsación del botón y radar GPS
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const radarAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Animación de respiración constante para el botón central de pánico
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.08,
+          duration: 1200,
+          useNativeDriver: true,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+          easing: Easing.inOut(Easing.ease),
+        }),
+      ])
+    ).start();
+
+    // Animación de onda de radar para el indicador de protección superior
+    Animated.loop(
+      Animated.timing(radarAnim, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.ease),
+      })
+    ).start();
+  }, [pulseAnim, radarAnim]);
+
+  // Manejo de la cuenta regresiva al presionar pánico
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isActive && countdown > 0) {
+      timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [isActive, countdown]);
+
+  const handlePanicPress = () => {
+    if (isActive) {
+      setIsActive(false);
+      setCountdown(5);
+    } else {
+      setIsActive(true);
+    }
+  };
+
+  // Interpolación de la escala y opacidad del radar del indicador superior
+  const radarScale = radarAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 2.5],
+  });
+
+  const radarOpacity = radarAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.6, 0],
+  });
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#080808" />
+      
+      {/* Fondo con degradado ambiental premium */}
+      <View style={styles.backgroundGradient}>
+        <View style={styles.radialGlow} />
+      </View>
+
+      {/* SECCIÓN SUPERIOR: INDICADOR DE ESTADO EN VERDE NEÓN */}
+      <View style={styles.header}>
+        <View style={styles.protectedBadge}>
+          <View style={styles.gpsContainer}>
+            <Animated.View 
+              style={[
+                styles.radarWave, 
+                { 
+                  transform: [{ scale: radarScale }], 
+                  opacity: radarOpacity 
+                }
+              ]} 
+            />
+            <View style={[styles.pulseDot, isActive && styles.pulseDotActive]} />
+          </View>
+          <Text style={styles.protectedText}>
+            Estado: <Text style={isActive ? styles.statusAlert : styles.statusSecure}>{isActive ? 'Alerta Activa' : 'Protegido'}</Text>
+          </Text>
+        </View>
+      </View>
+
+      {/* SECCIÓN CENTRAL: BOTÓN DE PÁNICO FLEXIBLE Y RESPONSIVO */}
+      <View style={styles.centerContainer}>
+        {isActive && (
+          <View style={styles.rippleOverlay}>
+            <View style={styles.rippleCircle1} />
+            <View style={styles.rippleCircle2} />
+          </View>
+        )}
+
+        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+          <TouchableOpacity 
+            activeOpacity={0.85}
+            onPress={handlePanicPress} 
+            style={[
+              styles.sosButton, 
+              isActive ? styles.sosButtonActive : styles.sosButtonNormal
+            ]}
+          >
+            {isActive ? (
+              <View style={styles.buttonContent}>
+                <ShieldAlert size={BUTTON_SIZE * 0.35} color="#FFFFFF" style={styles.bounceIcon} />
+                <Text style={styles.sosText}>{countdown > 0 ? countdown : 'C5i'}</Text>
+                <Text style={styles.subText}>PRESIONA PARA CANCELAR</Text>
+              </View>
+            ) : (
+              <View style={styles.buttonContent}>
+                <Shield size={BUTTON_SIZE * 0.35} color="#FFFFFF" />
+                <Text style={styles.sosText}>S.O.S.</Text>
+                <Text style={styles.subText}>MANTÉN PRESIONADO</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* GLOW DE FONDO DETRÁS DEL BOTÓN */}
+        <View style={[styles.buttonGlow, isActive ? styles.buttonGlowActive : styles.buttonGlowNormal]} />
+      </View>
+
+      {/* SECCIÓN INFERIOR: UBICACIÓN Y TARJETA COMPLEMENTARIA */}
+      <View style={styles.footer}>
+        <View style={styles.locationContainer}>
+          <Text style={styles.locationText}>
+            Ubicación Compartida: <Text style={isActive ? styles.locationActive : styles.locationWait}>{isActive ? 'Transmitiendo en Vivo' : 'En Espera'}</Text>
+          </Text>
+        </View>
+
+        {/* Tarjeta de Monitoreo "Acompáñame" y Contactos */}
+        <View style={styles.card}>
+          <View style={styles.cardRow}>
+            <View style={styles.cardIconBox}>
+              <Navigation size={18} color="#FF9500" />
+            </View>
+            <View style={styles.cardHeaderInfo}>
+              <Text style={styles.cardTitle}>Acompáñame</Text>
+              <Text style={styles.cardSubtitle}>Monitoreo en vivo de trayecto</Text>
+            </View>
+            <TouchableOpacity 
+              activeOpacity={0.8}
+              onPress={() => setIsCompanionActive(!isCompanionActive)}
+              style={[styles.toggleContainer, isCompanionActive ? styles.toggleOn : styles.toggleOff]}
+            >
+              <View style={[styles.toggleCircle, isCompanionActive ? styles.circleOn : styles.circleOff]} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.contactsSection}>
+            <Text style={styles.contactsTitle}>CONTACTOS SEGUROS DE CONFIANZA</Text>
+            <View style={styles.contactsRow}>
+              <View style={styles.contactItem}>
+                <View style={styles.avatarContainer}>
+                  <Text style={styles.avatarText}>MP</Text>
+                  <View style={styles.avatarStatus} />
+                </View>
+                <Text style={styles.contactName} numberOfLines={1}>Mamá</Text>
+              </View>
+              
+              <View style={styles.contactItem}>
+                <View style={[styles.avatarContainer, { borderColor: 'rgba(88, 86, 214, 0.3)' }]}>
+                  <Text style={[styles.avatarText, { color: '#5856D6' }]}>PO</Text>
+                  <View style={styles.avatarStatus} />
+                </View>
+                <Text style={styles.contactName} numberOfLines={1}>Papá</Text>
+              </View>
+
+              <View style={styles.contactItem}>
+                <View style={[styles.avatarContainer, { borderColor: 'rgba(255, 45, 85, 0.3)' }]}>
+                  <Text style={[styles.avatarText, { color: '#FF2D55' }]}>HE</Text>
+                  <View style={styles.avatarStatus} />
+                </View>
+                <Text style={styles.contactName} numberOfLines={1}>Hermano</Text>
+              </View>
+
+              <TouchableOpacity style={styles.addButton}>
+                <Users size={16} color="rgba(255,255,255,0.6)" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#080808',
+  },
+  backgroundGradient: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#080808',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: -1,
+  },
+  radialGlow: {
+    position: 'absolute',
+    width: screenWidth * 1.5,
+    height: screenWidth * 1.5,
+    borderRadius: (screenWidth * 1.5) / 2,
+    backgroundColor: 'rgba(255, 59, 48, 0.02)',
+  },
+  header: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    width: '100%',
+  },
+  protectedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 99,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  gpsContainer: {
+    width: 10,
+    height: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  pulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#00FF88',
+  },
+  pulseDotActive: {
+    backgroundColor: '#FF3B30',
+  },
+  radarWave: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'rgba(0, 255, 136, 0.4)',
+  },
+  protectedText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  statusSecure: {
+    color: '#00FF88',
+    fontWeight: '700',
+  },
+  statusAlert: {
+    color: '#FF3B30',
+    fontWeight: '700',
+  },
+  centerContainer: {
+    flex: 1.2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    width: '100%',
+  },
+  rippleOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    pointerEvents: 'none',
+  },
+  rippleCircle1: {
+    position: 'absolute',
+    width: BUTTON_SIZE * 1.3,
+    height: BUTTON_SIZE * 1.3,
+    borderRadius: (BUTTON_SIZE * 1.3) / 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 59, 48, 0.2)',
+  },
+  rippleCircle2: {
+    position: 'absolute',
+    width: BUTTON_SIZE * 1.6,
+    height: BUTTON_SIZE * 1.6,
+    borderRadius: (BUTTON_SIZE * 1.6) / 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 59, 48, 0.08)',
+  },
+  sosButton: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: BUTTON_RADIUS,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 4,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 8,
+  },
+  sosButtonNormal: {
+    backgroundColor: '#1C0606',
+    borderColor: 'rgba(255, 59, 48, 0.3)',
+    shadowColor: 'rgba(255, 59, 48, 0.4)',
+  },
+  sosButtonActive: {
+    backgroundColor: '#FF3B30',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: 'rgba(255, 59, 48, 0.8)',
+  },
+  buttonContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+  },
+  bounceIcon: {
+    marginBottom: 4,
+  },
+  sosText: {
+    fontSize: BUTTON_SIZE * 0.16,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 2,
+    marginTop: 2,
+  },
+  subText: {
+    fontSize: BUTTON_SIZE * 0.05,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.65)',
+    textAlign: 'center',
+    marginTop: 6,
+    letterSpacing: 0.5,
+  },
+  buttonGlow: {
+    position: 'absolute',
+    width: BUTTON_SIZE * 0.9,
+    height: BUTTON_SIZE * 0.9,
+    borderRadius: (BUTTON_SIZE * 0.9) / 2,
+    filter: 'blur(30px)',
+    zIndex: -1,
+    opacity: 0.15,
+  },
+  buttonGlowNormal: {
+    backgroundColor: '#FF3B30',
+  },
+  buttonGlowActive: {
+    backgroundColor: '#FF3B30',
+    opacity: 0.4,
+  },
+  footer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    width: '100%',
+  },
+  locationContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  locationText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  locationWait: {
+    color: '#FF9500',
+    fontWeight: '700',
+  },
+  locationActive: {
+    color: '#00FF88',
+    fontWeight: '700',
+  },
+  card: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 24,
+    padding: 18,
+    width: '100%',
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 149, 0, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardHeaderInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  cardSubtitle: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.4)',
+    marginTop: 2,
+  },
+  toggleContainer: {
+    width: 46,
+    height: 26,
+    borderRadius: 13,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  toggleOff: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  toggleOn: {
+    backgroundColor: '#00FF88',
+  },
+  toggleCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFFFFF',
+  },
+  circleOn: {
+    alignSelf: 'flex-end',
+  },
+  circleOff: {
+    alignSelf: 'flex-start',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    marginVertical: 16,
+  },
+  contactsSection: {
+    width: '100%',
+  },
+  contactsTitle: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: 'rgba(255, 255, 255, 0.35)',
+    letterSpacing: 1.5,
+    marginBottom: 12,
+  },
+  contactsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  contactItem: {
+    alignItems: 'center',
+    width: 52,
+  },
+  avatarContainer: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 149, 0, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 149, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  avatarText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FF9500',
+  },
+  avatarStatus: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#00FF88',
+    borderWidth: 2,
+    borderColor: '#080808',
+  },
+  contactName: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontWeight: '500',
+    marginTop: 6,
+    textAlign: 'center',
+    width: '100%',
+  },
+  addButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
+`;
+
 interface Contact {
   id: string;
   name: string;
@@ -747,11 +1267,12 @@ export default function App() {
   // Estados para el Prototype Hub y Cambio de Rol
   const [phoneMode, setPhoneMode] = useState<'sos' | 'hub'>('hub');
   const [hubRole, setHubRole] = useState<'ciudadano' | 'agente' | 'c4'>('ciudadano');
+  const [sessionActive, setSessionActive] = useState<boolean>(true);
   const [hubAgentActive, setHubAgentActive] = useState(true);
   const [hubAlertAccepted, setHubAlertAccepted] = useState(false);
   const [hubClosingReport, setHubClosingReport] = useState('');
   const [hubReportSubmitted, setHubReportSubmitted] = useState(false);
-  const [inspectedFile, setInspectedFile] = useState<'hub' | 'panic'>('hub');
+  const [inspectedFile, setInspectedFile] = useState<'hub' | 'panic' | 'corrigido'>('hub');
 
   // Estados para la Simulación del Teléfono
   const [panicActive, setPanicActive] = useState(false);
@@ -761,7 +1282,7 @@ export default function App() {
   const [batteryLevel, setBatteryLevel] = useState(94);
   const [simulatedLat, setSimulatedLat] = useState(20.1018);
   const [simulatedLng, setSimulatedLng] = useState(-98.7592);
-  const [activeTab, setActiveTab] = useState<'code' | 'sim' | 'info'>('code');
+  const [activeTab, setActiveTab] = useState<'code' | 'sim' | 'info'>('sim');
   const [copied, setCopied] = useState(false);
   
   // Lista de Contactos de Confianza Editables
@@ -957,7 +1478,13 @@ export default function App() {
   };
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(inspectedFile === 'hub' ? rolesHubCode : reactNativeCode);
+    navigator.clipboard.writeText(
+      inspectedFile === 'hub' 
+        ? rolesHubCode 
+        : inspectedFile === 'panic' 
+          ? reactNativeCode 
+          : panicScreenCorrigidoCode
+    );
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -1002,987 +1529,776 @@ export default function App() {
   };
 
   return (
-    <div id="panic_app_root" className="min-h-screen bg-[#080808] text-slate-100 font-sans antialiased overflow-x-hidden flex flex-col selection:bg-brand-red selection:text-white">
-      
-      {/* HEADER DE LA WEB */}
-      <header id="web_header" className="border-b border-white/5 bg-[#080808]/80 backdrop-blur-md px-6 py-4 sticky top-0 z-50 flex items-center justify-between">
+    <div id="panic_app_root" className="min-h-screen w-full bg-[#030712] text-slate-100 font-sans antialiased relative overflow-x-hidden selection:bg-red-500 selection:text-white flex flex-col justify-between">
+      {/* Ambient backgrounds */}
+      <div className="absolute inset-0 bg-[#030712] z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[120vw] h-[120vw] rounded-full bg-[radial-gradient(circle,rgba(239,68,68,0.035)_0%,transparent_70%)]" />
+        <div className="absolute bottom-0 right-1/4 w-[100vw] h-[100vw] rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.02)_0%,transparent_70%)]" />
+        <AnimatePresence>
+          {panicActive && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[radial-gradient(circle,rgba(239,68,68,0.08)_0%,transparent_60%)]"
+            />
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Main navigation / title bar */}
+      <header className="relative z-10 w-full border-b border-white/[0.05] bg-slate-950/40 backdrop-blur-md px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="vibrant-panic-gradient p-2 rounded-xl shadow-neon-red">
-            <Shield className="w-6 h-6 text-white" />
+          <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 shadow-lg shrink-0">
+            <Shield className="w-5 h-5 animate-pulse" />
           </div>
           <div>
-            <h1 className="font-display font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-              Hidalgo Alerta Ciudadana
-            </h1>
-            <p className="text-xs text-slate-400">Diseño UI/UX e Interfaz Móvil de Alto Impacto para Expo</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-black tracking-widest text-white uppercase">Hidalgo Alerta</h1>
+              <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[8px] font-black tracking-wider flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-emerald-400 animate-ping" />
+                <span>C5i CONECTADO</span>
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400 font-medium">Aplicación de Enlace Directo con Seguridad Pública</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          {/* Indicadores de sistema simulados en la web */}
-          <div className="hidden md:flex items-center gap-2 bg-[#1A1A1A] px-3 py-1.5 rounded-full border border-white/5 text-xs text-slate-400 font-mono">
-            <Radio className="w-3.5 h-3.5 text-brand-red animate-pulse" />
-            <span>NODO: C5i_Pachuca_01</span>
+        {/* Global tab switches to test different app perspectives (NO SIMULATOR WRAPPER) */}
+        {sessionActive && (
+          <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] p-1 rounded-xl">
+            <button
+              onClick={() => setHubRole('ciudadano')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${hubRole === 'ciudadano' ? 'bg-red-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Ciudadano</span>
+            </button>
+            <button
+              onClick={() => setHubRole('agente')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${hubRole === 'agente' ? 'bg-emerald-500 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span>Agente Operativo</span>
+            </button>
+            <button
+              onClick={() => setHubRole('c4')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${hubRole === 'c4' ? 'bg-blue-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
+              <Radio className="w-3.5 h-3.5" />
+              <span>Consola C5i</span>
+            </button>
           </div>
+        )}
 
+        <div className="flex items-center gap-2.5">
+          {/* Sound Toggle Button */}
           <button 
-            onClick={() => setSoundEnabled(!soundEnabled)} 
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
-            title={soundEnabled ? "Silenciar alarmas de prueba" : "Activar sonido de prueba"}
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className={`p-2.5 rounded-xl border transition-all cursor-pointer ${soundEnabled ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-slate-900 border-white/[0.04] text-slate-500'}`}
+            title={soundEnabled ? "Silenciar sirena de alerta" : "Activar sirena de alerta"}
           >
-            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5 text-slate-500" />}
+            {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>
+
+          {sessionActive && (
+            <button
+              onClick={() => setSessionActive(false)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Salir</span>
+            </button>
+          )}
         </div>
       </header>
 
-      {/* DISEÑO PRINCIPAL EN DOS COLUMNAS */}
-      <main id="web_main" className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* COLUMNA IZQUIERDA: EL TELÉFONO INTERACTIVO */}
-        <section id="phone_column" className="lg:col-span-5 flex flex-col items-center justify-center">
-          
-          {/* CONTROL DE MODO DE SIMULACIÓN */}
-          <div className="flex bg-[#12141a]/95 border border-white/5 p-1 rounded-2xl mb-4 w-full max-w-[360px] shadow-lg">
-            <button
-              onClick={() => setPhoneMode('hub')}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                phoneMode === 'hub'
-                  ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
-              }`}
+      {/* Main Viewport Container */}
+      <main className="relative z-10 flex-1 w-full max-w-7xl mx-auto p-4 md:p-8 flex flex-col justify-start">
+        {!sessionActive ? (
+          /* PORTAL ACCESS / GATEWAY LOGIN SCREEN */
+          <div className="my-auto py-12 flex flex-col items-center justify-center max-w-md w-full mx-auto">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="w-full bg-[#070c1b]/60 border border-white/[0.08] backdrop-blur-xl p-8 rounded-[28px] shadow-[0_24px_50px_rgba(0,0,0,0.6)] space-y-6 text-center"
             >
-              <Cpu className="w-3.5 h-3.5" />
-              <span>Prototype Hub (3 Roles)</span>
-            </button>
-            <button
-              onClick={() => setPhoneMode('sos')}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                phoneMode === 'sos'
-                  ? 'bg-white/5 text-white border border-white/5'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Shield className="w-3.5 h-3.5" />
-              <span>S.O.S Individual</span>
-            </button>
-          </div>
-          
-          <div className="relative mx-auto bg-[#080808] p-3.5 rounded-[48px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.6)] border-8 border-[#1F1F1F] ring-1 ring-white/10 max-w-[360px] w-full aspect-[9/19] overflow-hidden flex flex-col select-none">
-            
-            {/* Isla Dinámica / Parlante superior */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 h-7 w-32 bg-[#000000] rounded-b-2xl z-50 flex items-center justify-center">
-              <div className="w-12 h-1 bg-[#1F1F1F] rounded-full" />
-            </div>
-
-            {/* Barra de Estado Nativa (Batería, Wifi, Hora) */}
-            <div className="flex justify-between items-center px-6 pt-2 pb-1 text-slate-400 text-[11px] font-mono font-medium z-40">
-              <span>12:51</span>
-              <div className="flex items-center gap-1.5">
-                <Wifi className="w-3 h-3 text-slate-300" />
-                <div className="flex items-center gap-0.5">
-                  <span className="text-[10px]">{batteryLevel}%</span>
-                  <Battery className="w-4.5 h-3 text-slate-300" />
-                </div>
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-red-500/10 border border-red-500/20 text-red-500 mb-2">
+                <Shield className="w-8 h-8 animate-pulse" />
               </div>
-            </div>
+              <div className="space-y-1.5">
+                <h2 className="text-2xl font-black tracking-tight text-white uppercase">Acceso al Sistema</h2>
+                <p className="text-xs text-slate-400 max-w-xs mx-auto">
+                  Selecciona tu módulo de seguridad pública para ingresar de forma encriptada al C5i del Estado de Hidalgo.
+                </p>
+              </div>
 
-            {/* CONTENIDO DE LA PANTALLA MÓVIL */}
-            {phoneMode === 'hub' ? (
-              /* MODO PROTOTYPE HUB MULTI-ROL */
-              <div id="hub_mobile_screen" className="flex-1 flex flex-col justify-between relative rounded-[36px] bg-[#07090e] overflow-hidden text-left border border-white/5">
-                
-                {/* SELECTOR DE ROL SUPERIOR */}
-                <div className="bg-[#0b0e14] border-b border-white/5 p-3 text-center">
-                  <span className="text-[9px] font-black tracking-[0.2em] text-[#FF3B30] uppercase block mb-1">
-                    Hidalgo Alerta Hub
-                  </span>
-                  
-                  <div className="grid grid-cols-3 bg-white/5 rounded-xl p-0.5 border border-white/5 mt-1">
-                    <button
-                      onClick={() => setHubRole('ciudadano')}
-                      className={`py-1.5 rounded-lg text-[9px] font-bold transition-all flex items-center justify-center gap-1 ${
-                        hubRole === 'ciudadano'
-                          ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <User className="w-3 h-3" />
-                      <span>Ciudadano</span>
-                    </button>
-                    <button
-                      onClick={() => setHubRole('agente')}
-                      className={`py-1.5 rounded-lg text-[9px] font-bold transition-all flex items-center justify-center gap-1 ${
-                        hubRole === 'agente'
-                          ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <Shield className="w-3 h-3" />
-                      <span>Agente</span>
-                    </button>
-                    <button
-                      onClick={() => setHubRole('c4')}
-                      className={`py-1.5 rounded-lg text-[9px] font-bold transition-all flex items-center justify-center gap-1 ${
-                        hubRole === 'c4'
-                          ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <Radio className="w-3 h-3" />
-                      <span>C4 Central</span>
-                    </button>
+              <div className="space-y-3 pt-2">
+                {/* Ciudadano */}
+                <button
+                  onClick={() => {
+                    setHubRole('ciudadano');
+                    setSessionActive(true);
+                  }}
+                  className="w-full text-left p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] hover:border-red-500/30 transition-all duration-300 group flex items-center gap-4 cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 group-hover:scale-105 transition-transform shrink-0">
+                    <User className="w-5 h-5" />
                   </div>
-                </div>
+                  <div className="flex-1 text-left min-w-0">
+                    <h3 className="text-xs font-bold text-white group-hover:text-red-400 transition-colors">Enlace Ciudadano</h3>
+                    <p className="text-[10px] text-slate-400 mt-0.5">S.O.S de pánico, acompañamiento y contactos.</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-500 group-hover:translate-x-1 transition-transform self-center" />
+                </button>
 
-                {/* CONTENIDO INTERACTIVO DEL ROL SELECCIONADO */}
-                <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 custom-scrollbar">
+                {/* Agente */}
+                <button
+                  onClick={() => {
+                    setHubRole('agente');
+                    setSessionActive(true);
+                  }}
+                  className="w-full text-left p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] hover:border-emerald-500/30 transition-all duration-300 group flex items-center gap-4 cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shrink-0">
+                    <Shield className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 text-left min-w-0">
+                    <h3 className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">Agente Operativo</h3>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Alertas de proximidad, GPS y reportes de cierre.</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-500 group-hover:translate-x-1 transition-transform self-center" />
+                </button>
+
+                {/* C4 Central */}
+                <button
+                  onClick={() => {
+                    setHubRole('c4');
+                    setSessionActive(true);
+                  }}
+                  className="w-full text-left p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] hover:border-blue-500/30 transition-all duration-300 group flex items-center gap-4 cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform shrink-0">
+                    <Radio className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 text-left min-w-0">
+                    <h3 className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">Consola de Control C5i</h3>
+                    <p className="text-[10px] text-slate-400 mt-0.5">KPIs de reacción, mapa de calor y log de incidentes.</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-500 group-hover:translate-x-1 transition-transform self-center" />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        ) : (
+          /* ACTIVE PERSPECTIVE WORKSPACE - FULLSCREEN RESPONSIVE GRID */
+          <div className="w-full h-full flex flex-col justify-start">
+            
+            {/* ROLEPERSPECTIVE 1: CIUDADANO (Citizen Interface) */}
+            {hubRole === 'ciudadano' && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start w-full"
+              >
+                {/* LEFT CORE: SOS BUTTON TRIGGER */}
+                <div className="md:col-span-6 bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] p-8 rounded-[28px] backdrop-blur-md shadow-xl flex flex-col items-center justify-center min-h-[460px] relative overflow-hidden">
                   
-                  {/* ROL 1: CIUDADANO (APP MÓVIL) */}
-                  {hubRole === 'ciudadano' && (
-                    <div className="space-y-3.5 animate-fadeIn">
-                      {/* GPS Indicator */}
-                      <div className="flex items-center justify-between">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#00FF88]/10 border border-[#00FF88]/20">
-                          <span className="relative flex h-1.5 w-1.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00FF88] opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#00FF88]"></span>
-                          </span>
-                          <span className="text-[10px] font-semibold text-white">Estado: Protegido</span>
-                        </div>
-                        <span className="text-[10px] text-slate-400 font-mono">Pachuca, Hgo</span>
-                      </div>
+                  {/* Realtime GPS Satelital telemetry */}
+                  <div className="absolute top-4 left-6 right-6 flex items-center justify-between">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                      <span className="relative flex h-2 w-2">
+                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${panicActive ? 'bg-red-500' : 'bg-emerald-400'}`} />
+                        <span className={`relative inline-flex rounded-full h-2 w-2 ${panicActive ? 'bg-red-500' : 'bg-emerald-400'}`} />
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-200">
+                        {panicActive ? `ALERTA ACTIVA (${countdown}s)` : 'Enlace Conectado'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-500 tracking-wider">SATELLITE GPS ACTIVE</span>
+                  </div>
 
-                      {/* Botón de Pánico Central */}
-                      <div className="flex flex-col items-center justify-center py-2 relative">
-                        {panicActive && (
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="absolute w-28 h-28 rounded-full border border-red-500/30 animate-ping" />
-                          </div>
-                        )}
-                        
-                        <motion.button
-                          whileTap={{ scale: 0.94 }}
-                          onClick={() => {
-                            setPanicActive(!panicActive);
-                            if (!panicActive) {
-                              setCountdown(5);
-                              const newLog = {
-                                time: new Date().toLocaleTimeString(),
-                                type: 'error' as const,
-                                message: '¡ALERTA S.O.S RECIBIDA! Rosa María Gómez requiere apoyo inmediato en Pachuca Centro.'
-                              };
-                              setLogs(prev => [newLog, ...prev]);
-                            }
-                          }}
-                          className={`relative w-28 h-28 rounded-full flex flex-col items-center justify-center transition-all duration-300 shadow-xl ${
-                            panicActive 
-                              ? 'bg-gradient-to-br from-red-600 to-red-500 border-2 border-red-500 shadow-neon-red-lg' 
-                              : 'bg-gradient-to-br from-red-600 to-[#1e0707] border-2 border-[#FF3B30]/30 shadow-red-950/20 hover:border-[#FF3B30]/60'
-                          }`}
-                        >
-                          <ShieldAlert className="w-9 h-9 text-white animate-pulse" />
-                          <span className="text-base font-black tracking-wider text-white mt-0.5">S.O.S.</span>
-                          <span className="text-[7px] text-white/70 font-bold px-2 text-center mt-0.5">
-                            {panicActive ? 'PULSA PARA PARAR' : 'PRESIONAR'}
-                          </span>
-                        </motion.button>
-                        {panicActive && (
-                          <span className="text-[9px] text-red-500 font-bold mt-1.5 animate-pulse font-mono">
-                            ENLACE ACTIVO ({countdown}s)
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Acompáñame Card con Slider */}
-                      <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                              <Navigation className="w-3.5 h-3.5 text-amber-500" />
-                            </div>
-                            <div>
-                              <h4 className="text-[11px] font-bold text-white leading-none">Acompáñame</h4>
-                              <p className="text-[8px] text-slate-500 mt-0.5">Monitoreo de ruta seguro</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => setCompanionActive(!companionActive)}
-                            className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-300 flex items-center ${
-                              companionActive ? 'bg-[#00FF88]' : 'bg-white/10'
-                            }`}
-                          >
-                            <div className={`w-4 h-4 rounded-full bg-white shadow transform transition-transform duration-300 ${
-                              companionActive ? 'translate-x-4' : 'translate-x-0'
-                            }`} />
-                          </button>
-                        </div>
-                        
-                        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden relative">
-                          <div 
-                            className="h-full bg-amber-500/40 transition-all duration-1000" 
-                            style={{ width: companionActive ? '100%' : '30%' }}
+                  {/* Concentric Pulsing shockwaves */}
+                  <div className="flex-1 flex flex-col justify-center items-center py-12 relative w-full">
+                    <AnimatePresence>
+                      {panicActive && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <motion.div 
+                            initial={{ scale: 0.8, opacity: 0.6 }}
+                            animate={{ scale: 1.8, opacity: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ repeat: Infinity, duration: 2, ease: "easeOut" }}
+                            className="absolute w-56 aspect-square rounded-full border-2 border-red-500/30 bg-red-500/[0.02]"
+                          />
+                          <motion.div 
+                            initial={{ scale: 0.8, opacity: 0.4 }}
+                            animate={{ scale: 2.3, opacity: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ repeat: Infinity, duration: 2.5, ease: "easeOut", delay: 0.5 }}
+                            className="absolute w-56 aspect-square rounded-full border border-red-500/10"
                           />
                         </div>
-                        <p className="text-[8px] text-slate-500 text-center font-mono">
-                          {companionActive ? 'GPS activo • Geolocalizando trayectoria' : 'Activa para simular acompañamiento'}
-                        </p>
-                      </div>
-
-                      {/* Contactos de Confianza */}
-                      <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">
-                            Enlaces de Confianza
-                          </h4>
-                          <span className="text-[7px] text-[#00FF88] font-bold bg-[#00FF88]/10 px-1.5 py-0.2 rounded-full">
-                            3 Seguros
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          {contacts.slice(0, 3).map((contact) => (
-                            <div key={contact.id} className="flex flex-col items-center">
-                              <div className="w-8 h-8 rounded-full bg-red-600/10 border border-red-500/20 flex items-center justify-center relative">
-                                <span className="text-[9px] font-bold text-red-400">{contact.initials}</span>
-                                <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#00FF88] border border-[#080808]" />
-                              </div>
-                              <span className="text-[8px] text-slate-400 mt-1 truncate max-w-[40px] font-medium">{contact.name}</span>
-                            </div>
-                          ))}
-                          <button
-                            onClick={() => setActiveTab('sim')}
-                            className="w-8 h-8 rounded-full bg-white/5 border border-dashed border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors"
-                          >
-                            <Plus className="w-3 h-3 text-slate-400" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ROL 2: AGENTE (APP OFICIAL) */}
-                  {hubRole === 'agente' && (
-                    <div className="space-y-3.5 animate-fadeIn">
-                      {/* Cabecera Agente */}
-                      <div className="flex items-center justify-between bg-white/[0.02] border border-white/5 rounded-xl p-2.5">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                            <Shield className="w-4 h-4 text-emerald-500" />
-                          </div>
-                          <div>
-                            <h4 className="text-[11px] font-bold text-white">Unidad 04 Pachuca</h4>
-                            <p className="text-[8px] text-emerald-500 font-bold">
-                              {hubAgentActive ? '● Patrullando (Activo)' : '○ Fuera de Servicio'}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => setHubAgentActive(!hubAgentActive)}
-                          className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-300 flex items-center ${
-                            hubAgentActive ? 'bg-[#00FF88]' : 'bg-white/10'
-                          }`}
-                        >
-                          <div className={`w-4 h-4 rounded-full bg-white shadow transform transition-transform duration-300 ${
-                            hubAgentActive ? 'translate-x-4' : 'translate-x-0'
-                          }`} />
-                        </button>
-                      </div>
-
-                      {/* Alerta de proximidad */}
-                      <div className="bg-red-950/20 border border-red-500/30 rounded-xl p-3 space-y-2.5 text-left">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[8px] font-black text-red-500 uppercase tracking-wider flex items-center gap-1 bg-red-950/60 px-1.5 py-0.5 rounded">
-                            <AlertTriangle className="w-2.5 h-2.5 animate-pulse" /> ALERTA S.O.S
-                          </span>
-                          <span className="text-[8px] text-slate-400 font-mono">A 0.8 km</span>
-                        </div>
-                        
-                        <div>
-                          <h4 className="text-[11px] font-bold text-white">Rosa María Gómez • S.O.S</h4>
-                          <p className="text-[8px] text-slate-400 mt-0.5">Av. Madero esq. Revolución, Pachuca Centro</p>
-                        </div>
-
-                        {!hubAlertAccepted ? (
-                          <div className="grid grid-cols-2 gap-2 pt-1">
-                            <button
-                              onClick={() => {
-                                const newLog = {
-                                  time: new Date().toLocaleTimeString(),
-                                  type: 'info' as const,
-                                  message: 'Oficial de Unidad 04 delegó alerta por estar atendiendo otro reporte.'
-                                };
-                                setLogs(prev => [newLog, ...prev]);
-                                alert('Alerta delegada de vuelta al despacho C5i.');
-                              }}
-                              className="py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[9px] text-slate-300 font-bold border border-white/5"
-                            >
-                              Delegar
-                            </button>
-                            <button
-                              onClick={() => {
-                                setHubAlertAccepted(true);
-                                const newLog = {
-                                  time: new Date().toLocaleTimeString(),
-                                  type: 'success' as const,
-                                  message: 'Oficial de Unidad 04 ACEPTÓ servicio de S.O.S. de Rosa María Gómez. En ruta.'
-                                };
-                                setLogs(prev => [newLog, ...prev]);
-                              }}
-                              className="py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-[9px] text-white font-bold flex items-center justify-center gap-1 shadow-md shadow-red-900/30"
-                            >
-                              <CheckCircle2 className="w-3 h-3" />
-                              Aceptar
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="space-y-2 pt-1">
-                            <div className="flex items-center gap-1 px-2 py-1 rounded bg-red-500/10 border border-red-500/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
-                              <span className="text-[8px] text-red-400 font-bold">Unidad en curso - arribo en 3 min</span>
-                            </div>
-                            <button
-                              onClick={() => alert('Navegando al punto georreferenciado...')}
-                              className="w-full py-1.5 rounded-lg bg-[#00FF88] text-slate-900 text-[9px] font-black flex items-center justify-center gap-1 shadow"
-                            >
-                              <Navigation className="w-3 h-3 text-slate-950" />
-                              Iniciar GPS de Arribo
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Reporte de cierre rápido */}
-                      <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-2 text-left">
-                        <div className="flex items-center gap-1.5">
-                          <FileText className="w-3.5 h-3.5 text-emerald-400" />
-                          <h4 className="text-[10px] font-bold text-white">Reporte Técnico de Cierre</h4>
-                        </div>
-                        <textarea
-                          value={hubClosingReport}
-                          onChange={(e) => setClosingReport(e.target.value)}
-                          placeholder="Falsa alarma, traslado exitoso, riña dispersada..."
-                          className="w-full bg-white/5 border border-white/5 rounded-lg p-2 text-[9px] text-white placeholder-slate-600 focus:outline-none focus:border-red-500/30 h-11 resize-none"
-                        />
-                        <button
-                          onClick={() => {
-                            if (hubClosingReport.trim()) {
-                              setHubReportSubmitted(true);
-                              const newLog = {
-                                time: new Date().toLocaleTimeString(),
-                                  type: 'success' as const,
-                                  message: `Caso CERRADO por Unidad 04: "${hubClosingReport}".`
-                              };
-                              setLogs(prev => [newLog, ...prev]);
-                              setTimeout(() => {
-                                setHubClosingReport('');
-                                setHubReportSubmitted(false);
-                                setHubAlertAccepted(false);
-                              }, 2000);
-                            }
-                          }}
-                          disabled={!hubClosingReport.trim() || hubReportSubmitted}
-                          className={`w-full py-1.5 rounded-lg text-[9px] font-bold flex items-center justify-center gap-1 transition-all ${
-                            hubReportSubmitted
-                              ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                              : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black'
-                          }`}
-                        >
-                          {hubReportSubmitted ? (
-                            <>
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>Reporte Enviado</span>
-                            </>
-                          ) : (
-                            <>
-                              <Send className="w-3 h-3" />
-                              <span>Cerrar Alerta con Evidencia</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ROL 3: C4 CENTRAL */}
-                  {hubRole === 'c4' && (
-                    <div className="space-y-3.5 animate-fadeIn">
-                      {/* KPIs del Despacho */}
-                      <div className="grid grid-cols-2 gap-2 text-left">
-                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-2 flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-red-500 animate-pulse" />
-                          <div>
-                            <span className="text-[10px] font-black text-white block">4.2 min</span>
-                            <span className="text-[7px] text-slate-500">Tiempo de Reacción</span>
-                          </div>
-                        </div>
-                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-2 flex items-center gap-1.5">
-                          <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                          <div>
-                            <span className="text-[10px] font-black text-white block">18</span>
-                            <span className="text-[7px] text-slate-500">Unidades Activas</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Simulación del Mapa Operativo */}
-                      <div className="bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden text-left">
-                        <div className="bg-white/[0.03] px-2.5 py-1 flex items-center justify-between border-b border-white/5">
-                          <span className="text-[8px] font-bold text-white flex items-center gap-1">
-                            <Activity className="w-3 h-3 text-red-500 animate-pulse" /> Mapa Operativo C5i
-                          </span>
-                          <span className="text-[6px] text-red-500 font-bold bg-red-500/10 px-1 rounded flex items-center gap-0.5">
-                            <span className="w-1 h-1 rounded-full bg-red-500 animate-ping" /> LIVE
-                          </span>
-                        </div>
-                        <div className="h-24 bg-[#0a0d13] relative overflow-hidden">
-                          {/* Grid line effect */}
-                          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:12px_12px]" />
-                          
-                          {/* Markers */}
-                          <div className="absolute top-[20%] left-[25%] flex flex-col items-center">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-md shadow-emerald-400" />
-                            <span className="text-[5px] font-bold text-emerald-400 bg-black/80 px-1 rounded mt-0.5 font-mono">U-04</span>
-                          </div>
-                          
-                          <div className="absolute top-[65%] left-[70%] flex flex-col items-center">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-md shadow-emerald-400" />
-                            <span className="text-[5px] font-bold text-emerald-400 bg-black/80 px-1 rounded mt-0.5 font-mono">U-12</span>
-                          </div>
-
-                          <div className="absolute top-[40%] left-[45%] flex flex-col items-center">
-                            <span className="w-2 h-2 rounded-full bg-red-500 shadow-lg shadow-red-500/50 animate-ping absolute" />
-                            <span className="w-2 h-2 rounded-full bg-red-500 shadow-lg shadow-red-500" />
-                            <span className="text-[5px] font-black text-red-500 bg-black/80 px-1 rounded mt-0.5 font-mono">S.O.S</span>
-                          </div>
-
-                          <span className="absolute bottom-1 right-2 text-[5px] text-slate-500 font-mono">Región Hidalgo Centro</span>
-                        </div>
-                      </div>
-
-                      {/* Lista de incidentes */}
-                      <div className="bg-white/[0.02] border border-white/5 rounded-xl p-2.5 text-left">
-                        <h4 className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                          Incidentes Activos
-                        </h4>
-                        
-                        <div className="space-y-1.5 text-[8px]">
-                          <div className="flex items-center justify-between border-b border-white/5 pb-1">
-                            <div>
-                              <span className="text-white font-bold">R. Gómez</span>
-                              <span className="text-slate-500 block">Pachuca Centro</span>
-                            </div>
-                            <div className="text-right">
-                              <span className="text-amber-500 font-mono block">1.5 min</span>
-                              <span className="text-red-500 font-black uppercase text-[6px] bg-red-500/10 px-1 rounded">Activo</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="text-white font-bold">J. Ortega</span>
-                              <span className="text-slate-500 block">Plaza Q</span>
-                            </div>
-                            <div className="text-right">
-                              <span className="text-emerald-500 font-mono block">3.8 min</span>
-                              <span className="text-emerald-500 font-black uppercase text-[6px] bg-emerald-500/10 px-1 rounded">Cerrado</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-
-                {/* iOS Simulador Home Indicator */}
-                <div className="h-4 flex items-end justify-center pb-1 bg-[#0b0e14]/50 border-t border-white/5">
-                  <div className="w-24 h-1 bg-white/20 rounded-full" />
-                </div>
-              </div>
-            ) : (
-              /* MODO S.O.S INDIVIDUAL ESTÁNDAR DE CIUDADANO */
-              <div id="sos_mobile_screen" className="flex-1 flex flex-col justify-between relative px-4 pb-6 pt-4 rounded-[36px] vibrant-bg-gradient overflow-hidden">
-                
-                {/* Degradados ambientales de fondo en el móvil */}
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,255,136,0.03)_0%,transparent_70%)] pointer-events-none" />
-                
-                {/* SECCIÓN SUPERIOR MINIMALISTA */}
-                <div className="z-10 text-center mt-3">
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full vibrant-protected-badge backdrop-blur-md shadow-neon-green/10 transition-colors duration-300">
-                    <div className="relative w-2.5 h-2.5 flex items-center justify-center">
-                      {/* Radar latiendo */}
-                      <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${panicActive ? 'bg-brand-red animate-ping' : 'bg-[#00FF88]'}`} />
-                      <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${panicActive ? 'bg-brand-red' : 'bg-[#00FF88]'}`} />
-                    </div>
-                    <span className="text-xs font-semibold text-white tracking-wide">
-                      Estado: <span className={panicActive ? 'text-brand-red font-bold' : 'text-[#00FF88] font-bold'}>
-                        {panicActive ? `ALERTA ENVIADA (${countdown}s)` : 'Protegido'}
-                      </span>
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-400 font-mono tracking-wider mt-2 flex items-center justify-center gap-1">
-                    <MapPin className="w-3 h-3 text-slate-500 animate-pulse" />
-                    PACHUCA, HGO • {simulatedLat.toFixed(4)}° N, {simulatedLng.toFixed(4)}° W
-                  </p>
-                </div>
-
-                {/* BOTÓN DE PÁNICO CENTRAL */}
-                <div className="flex-1 flex flex-col justify-center items-center relative z-10 my-8">
-                  
-                  {/* Ondas expansivas de vibración si está activo */}
-                  {panicActive && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="absolute w-48 h-48 rounded-full border-2 border-brand-red/30 animate-ping" />
-                    </div>
-                  )}
-
-                  <motion.button
-                    id="central_panic_button"
-                    whileTap={{ scale: 0.94 }}
-                    onClick={handlePanicToggle}
-                    className={`relative w-44 h-44 rounded-full flex flex-col items-center justify-center transition-all duration-500 shadow-2xl ${
-                      panicActive 
-                        ? 'bg-gradient-to-br from-brand-red to-brand-fire border-4 border-brand-fire shadow-neon-red-lg' 
-                        : 'vibrant-panic-gradient border-4 border-[#FF3B30]/40 hover:border-[#FF3B30]/70 shadow-neon-red-lg hover:scale-105'
-                    }`}
-                  >
-                    <AnimatePresence mode="wait">
-                      {panicActive ? (
-                        <motion.div
-                          key="alert-icon"
-                          initial={{ scale: 0.6, rotate: -45 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          exit={{ scale: 0.6 }}
-                          className="flex flex-col items-center justify-center"
-                        >
-                          <ShieldAlert className="w-14 h-14 text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)]" />
-                          <span className="text-2xl font-black font-display tracking-widest text-white mt-2">
-                            {countdown > 0 ? countdown : 'C5i'}
-                          </span>
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key="shield-icon"
-                          initial={{ scale: 0.6 }}
-                          animate={{ scale: 1 }}
-                          exit={{ scale: 0.6 }}
-                          className="flex flex-col items-center justify-center text-center px-4"
-                        >
-                          <Shield className="w-14 h-14 text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.2)]" />
-                          <span className="text-2xl font-black font-display tracking-widest text-white mt-2">
-                            S.O.S.
-                          </span>
-                        </motion.div>
                       )}
                     </AnimatePresence>
 
-                    <span className="absolute bottom-4 text-[9px] font-bold text-white/70 text-center px-3 tracking-wide">
-                      {panicActive ? 'PRESIONA PARA CANCELAR' : 'PRESIONAR'}
-                    </span>
-                  </motion.button>
-                  
-                  {/* Glow ambiental detrás del botón */}
-                  <div className={`absolute w-36 h-36 rounded-full blur-3xl opacity-35 -z-10 transition-colors duration-500 ${panicActive ? 'bg-[#FF3B30]' : 'bg-[#D0021B]'}`} />
-                </div>
-
-                {/* TARJETA FLOTANTE INFERIOR */}
-                <div className="bg-white/[0.03] backdrop-blur-[10px] border-t border-white/10 shadow-2xl rounded-[32px] p-4 z-10">
-                  
-                  {/* Sección Acompáñame */}
-                  <div className="flex items-center justify-between mb-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-[#FF9500]/10 flex items-center justify-center">
-                        <Navigation className="w-4 h-4 text-[#FF9500]" />
-                      </div>
-                      <div className="text-left">
-                        <h3 className="text-xs font-bold text-white leading-tight font-display">Acompáñame</h3>
-                        <p className="text-[9px] text-slate-400 mt-0.5">Monitoreo de ruta en vivo</p>
-                      </div>
-                    </div>
-
-                    {/* Toggle Slider */}
-                    <button 
-                      onClick={handleCompanionToggle}
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-300 flex items-center ${companionActive ? 'bg-[#00FF88]' : 'bg-white/10'}`}
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handlePanicToggle}
+                      className={`relative w-48 aspect-square rounded-full flex flex-col items-center justify-center border-4 shadow-3xl cursor-pointer transition-all duration-300 ${
+                        panicActive 
+                          ? 'bg-gradient-to-br from-red-600 to-red-500 border-white/20 shadow-[0_0_50px_rgba(239,68,68,0.5)] animate-pulse' 
+                          : 'bg-[#1e0707] border-red-500/30 hover:border-red-500/50 hover:bg-[#2e0909] shadow-[0_0_35px_rgba(239,68,68,0.15)]'
+                      }`}
                     >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-300 ${companionActive ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
+                      <div className="flex flex-col items-center justify-center p-4 text-center select-none">
+                        {panicActive ? (
+                          <>
+                            <ShieldAlert className="w-14 h-14 text-white animate-bounce" />
+                            <span className="text-3xl font-black text-white mt-1">
+                              {countdown > 0 ? countdown : 'C5i'}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Shield className="w-14 h-14 text-red-500" />
+                            <span className="text-3xl font-black text-white mt-1">S.O.S.</span>
+                          </>
+                        )}
+                        <span className="text-[10px] font-black tracking-widest text-white/80 uppercase mt-3">
+                          {panicActive ? 'Presiona para Cancelar' : 'PRESIONAR ENLACE'}
+                        </span>
+                      </div>
+                    </motion.button>
                   </div>
 
-                  <div className="h-[1px] bg-white/5 my-3" />
+                  {/* Satellite Coordinates and telemetry logs */}
+                  <div className="w-full text-center space-y-1 mt-auto pt-4 border-t border-white/[0.04]">
+                    <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-semibold">
+                      <MapPin className="w-3.5 h-3.5 text-red-400" />
+                      <span>Ubicación actual: {simulatedLat.toFixed(5)}°, {simulatedLng.toFixed(5)}° (Pachuca Centro)</span>
+                    </div>
+                    <p className="text-[9px] text-slate-500 font-medium">Batería del dispositivo: {batteryLevel}% • Precisión: 2 metros</p>
+                  </div>
+                </div>
 
-                  {/* Sección Contactos de Confianza */}
-                  <div className="text-left">
-                    <h4 className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-2.5 font-display">
-                      Contactos Seguros
-                    </h4>
-                    
-                    <div className="flex items-center gap-2.5 justify-between">
-                      {contacts.slice(0, 3).map((contact, index) => {
-                        const colors = [
-                          { bg: 'rgba(255, 149, 0, 0.1)', border: 'rgba(255, 149, 0, 0.3)', text: '#FF9500' },
-                          { bg: 'rgba(88, 86, 214, 0.1)', border: 'rgba(88, 86, 214, 0.3)', text: '#5856D6' },
-                          { bg: 'rgba(255, 45, 85, 0.1)', border: 'rgba(255, 45, 85, 0.3)', text: '#FF2D55' },
-                        ];
-                        const color = colors[index % colors.length];
-
-                        return (
-                          <div key={contact.id} className="flex flex-col items-center w-12 relative group">
-                            <div 
-                              style={{ backgroundColor: color.bg, borderColor: color.border }}
-                              className="w-10 h-10 rounded-full border flex items-center justify-center relative shadow-sm"
-                            >
-                              <span style={{ color: color.text }} className="text-xs font-bold">{contact.initials}</span>
-                              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#00FF88] border-2 border-[#080808]" />
-                            </div>
-                            <span className="text-[9px] text-slate-400 truncate w-full text-center mt-1.5 font-medium">
-                              {contact.name}
-                            </span>
-                          </div>
-                        );
-                      })}
-
-                      {/* Botón Gestionar */}
+                {/* RIGHT CORE: LIVE SERVICES (ACOMPAÑAME & CONTACTS) */}
+                <div className="md:col-span-6 space-y-6">
+                  
+                  {/* service 1: Acompáñame Live escort */}
+                  <div className="bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                          <Navigation className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-white">Servicio de Escolta "Acompáñame"</h3>
+                          <p className="text-[10px] text-slate-400">Monitoreo activo y continuo de ruta en C5i</p>
+                        </div>
+                      </div>
+                      
                       <button 
-                        onClick={() => setActiveTab('sim')}
-                        className="w-10 h-10 rounded-xl bg-white/5 border border-dashed border-white/15 flex flex-col items-center justify-center hover:bg-white/10 transition-colors"
+                        onClick={handleCompanionToggle}
+                        className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-300 flex items-center cursor-pointer ${companionActive ? 'bg-[#00FF88]' : 'bg-white/10'}`}
                       >
-                        <Users className="w-4 h-4 text-slate-400" />
-                        <span className="text-[7px] text-slate-500 mt-1 font-bold">Gestionar</span>
+                        <div className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform duration-300 ${companionActive ? 'translate-x-5' : 'translate-x-0'}`} />
                       </button>
                     </div>
-                  </div>
 
-                </div>
-
-              </div>
-            )}
-
-            {/* Barra de Home de iOS simulada */}
-            <div className="h-4 flex items-end justify-center pb-1">
-              <div className="w-28 h-1 bg-white/20 rounded-full" />
-            </div>
-
-          </div>
-
-          <div className="mt-6 flex flex-col items-center text-center gap-1 px-4">
-            <p className="text-xs text-slate-400">
-              💡 <span className="font-semibold text-slate-200">Tip de diseño:</span> El gran botón central facilita presionar con una sola mano en emergencias. El borde circular de pánico tiene un radio extendido para mayor accesibilidad táctil.
-            </p>
-          </div>
-
-        </section>
-
-        {/* COLUMNA DERECHA: CONFIGURADOR / INSPECTOR DE CÓDIGO */}
-        <section id="inspector_column" className="lg:col-span-7 bg-[#0f1115] border border-white/5 rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[700px]">
-          
-          {/* Navegación por pestañas del panel de control */}
-          <div className="flex bg-[#0a0c0f] border-b border-white/5 p-2">
-            <button
-              onClick={() => setActiveTab('code')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'code' 
-                  ? 'bg-brand-red/10 text-brand-red' 
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Code className="w-4 h-4" />
-              <span>Código React Native (Expo)</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('sim')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
-                activeTab === 'sim' 
-                  ? 'bg-brand-red/10 text-brand-red' 
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Activity className="w-4 h-4" />
-              <span>Simulador C5i & Contactos</span>
-              {panicActive && (
-                <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-brand-red"></span>
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('info')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'info' 
-                  ? 'bg-brand-red/10 text-brand-red' 
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Cpu className="w-4 h-4" />
-              <span>Detalles UI/UX</span>
-            </button>
-          </div>
-
-          {/* CONTENIDO DE PESTAÑAS */}
-          <div className="flex-1 overflow-y-auto p-6 text-left">
-            
-            {/* PESTAÑA 1: CÓDIGO FUENTE DE REACT NATIVE */}
-            {activeTab === 'code' && (
-              <div className="h-full flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <FileCode2 className="w-5 h-5 text-brand-red" />
-                    <div>
-                      <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Ver Código Fuente:</span>
-                      <div className="flex gap-2 mt-1">
-                        <button
-                          onClick={() => setInspectedFile('hub')}
-                          className={`px-3 py-1 rounded-lg text-xs font-mono transition-all ${
-                            inspectedFile === 'hub'
-                              ? 'bg-[#FF3B30]/15 text-white border border-[#FF3B30]/30 font-bold'
-                              : 'text-slate-400 border border-transparent hover:text-slate-200'
-                          }`}
-                        >
-                          RolesHubScreen.tsx
-                        </button>
-                        <button
-                          onClick={() => setInspectedFile('panic')}
-                          className={`px-3 py-1 rounded-lg text-xs font-mono transition-all ${
-                            inspectedFile === 'panic'
-                              ? 'bg-[#FF3B30]/15 text-white border border-[#FF3B30]/30 font-bold'
-                              : 'text-slate-400 border border-transparent hover:text-slate-200'
-                          }`}
-                        >
-                          PanicScreen.tsx
-                        </button>
+                    {/* Interactive Escort visual timeline tracker */}
+                    <div className="space-y-3.5">
+                      <div 
+                        onClick={handleCompanionToggle}
+                        className="relative h-12 bg-white/[0.04] hover:bg-white/[0.07] rounded-xl flex items-center px-2 cursor-pointer overflow-hidden transition-all border border-white/[0.04]"
+                      >
+                        <div className={`absolute top-0 bottom-0 left-0 bg-amber-500/10 rounded-xl transition-all duration-500 ${companionActive ? 'w-full' : 'w-[15%]'}`} />
+                        <div className={`w-8 h-8 rounded-lg bg-white flex items-center justify-center text-slate-900 shadow-md transition-all duration-500 ${companionActive ? 'translate-x-[260px] sm:translate-x-[360px] md:translate-x-[400px] lg:translate-x-[480px]' : 'translate-x-0'}`}>
+                          <Navigation className="w-4 h-4 text-slate-900 transform rotate-45" />
+                        </div>
+                        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-400 select-none pointer-events-none">
+                          {companionActive ? 'Geolocalizando trayecto en tiempo real...' : 'Desliza o activa para simular trayecto'}
+                        </span>
                       </div>
+
+                      {companionActive && (
+                        <motion.div 
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="bg-white/[0.02] border border-[#00FF88]/10 p-3 rounded-xl space-y-2 text-[11px] text-emerald-400 font-medium"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                            <span>Vigilancia de ruta activa por cámaras C5i</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-normal leading-relaxed">
+                            Ruta simulada: <span className="text-white font-bold">Plaza Independencia (Pachuca) → Blvd. Colosio</span>. Tu dispositivo enviará paquetes telemétricos cada 3 segundos.
+                          </p>
+                        </motion.div>
+                      )}
                     </div>
                   </div>
-                  
-                  <button
-                    onClick={handleCopyCode}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/5 rounded-xl text-xs font-bold text-slate-200 transition-all shadow-md cursor-pointer"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-brand-green" />
-                        <span className="text-brand-green">¡Copiado!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copiar Código</span>
-                      </>
-                    )}
-                  </button>
-                </div>
 
-                <div className="flex-1 bg-[#050608] rounded-2xl p-4 border border-white/5 overflow-auto font-mono text-xs text-slate-300 leading-relaxed shadow-inner max-h-[500px]">
-                  <pre>{inspectedFile === 'hub' ? rolesHubCode : reactNativeCode}</pre>
-                </div>
+                  {/* service 2: Trusted Circles & Contacts Manager */}
+                  <div className="bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-lg space-y-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-bold text-white">Contactos de Confianza (Enlaces)</h3>
+                        <p className="text-[10px] text-slate-400">Familiares alertados inmediatamente al activar S.O.S.</p>
+                      </div>
+                      
+                      <button 
+                        onClick={() => setShowAddContact(!showAddContact)}
+                        className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${showAddContact ? 'bg-white/15 border-white/20 text-white' : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/25'}`}
+                      >
+                        {showAddContact ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                        <span>{showAddContact ? 'Cancelar' : 'Añadir Enlace'}</span>
+                      </button>
+                    </div>
 
-                <div className="mt-4 p-4 rounded-xl bg-slate-900/40 border border-white/5 flex gap-3">
-                  <div className="p-2 rounded-lg bg-brand-red/10 text-brand-red h-fit">
-                    <Smartphone className="w-4 h-4" />
+                    {/* Inline form to add contacts */}
+                    <AnimatePresence>
+                      {showAddContact && (
+                        <motion.form 
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          onSubmit={handleAddContact}
+                          className="bg-white/[0.02] border border-white/[0.06] p-4 rounded-2xl space-y-3 overflow-hidden"
+                        >
+                          <h4 className="text-[10px] font-black tracking-wider text-slate-400 uppercase">Nuevo Enlace de Seguridad</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <input 
+                              type="text"
+                              value={newContactName}
+                              onChange={(e) => setNewContactName(e.target.value)}
+                              placeholder="Nombre (ej. Hermana)"
+                              className="bg-slate-950 border border-white/[0.08] focus:border-red-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition-all"
+                              required
+                            />
+                            <input 
+                              type="tel"
+                              value={newContactPhone}
+                              onChange={(e) => setNewContactPhone(e.target.value)}
+                              placeholder="Teléfono (ej. 771 123 4567)"
+                              className="bg-slate-950 border border-white/[0.08] focus:border-red-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition-all"
+                              required
+                            />
+                          </div>
+                          <button 
+                            type="submit"
+                            className="w-full py-2 bg-red-500 hover:bg-red-600 active:scale-95 text-white text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Registrar Contacto</span>
+                          </button>
+                        </motion.form>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Contacts Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {contacts.map((contact) => (
+                        <div key={contact.id} className="bg-slate-950/40 border border-white/[0.04] rounded-2xl p-3 flex sm:flex-col items-center justify-between sm:justify-center gap-3 relative group">
+                          
+                          {/* Close/Remove icon button */}
+                          <button 
+                            onClick={() => removeContact(contact.id, contact.name)}
+                            className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/[0.02] border border-white/10 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 flex items-center justify-center text-slate-400 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer"
+                            title="Eliminar enlace"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+
+                          <div className="flex sm:flex-col items-center gap-2.5 text-left sm:text-center">
+                            <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center relative">
+                              <span className="text-xs font-black text-red-400">{contact.initials}</span>
+                              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-[#030712]" />
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-white">{contact.name}</div>
+                              <div className="text-[9px] text-slate-500 mt-0.5">{contact.phone}</div>
+                            </div>
+                          </div>
+
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[8px] font-black font-sans">
+                            VINCULADO
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Este componente está optimizado para Expo y React Native utilizando <strong className="text-slate-200 font-semibold">StyleSheet estándar</strong>, garantizando compatibilidad total con cualquier boilerplate de React Native listo para compilar sin configuraciones extras.
-                  </p>
                 </div>
-              </div>
+              </motion.div>
             )}
 
-            {/* PESTAÑA 2: SIMULADOR DE INCIDENCIAS C5i & CONTACTOS */}
-            {activeTab === 'sim' && (
-              <div className="space-y-6">
-                
-                {/* Sección de Gestión de Contactos Seguros */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                      <Users className="w-4 h-4 text-brand-red" />
-                      Contactos de Confianza (Simulación de Agenda)
-                    </h3>
+            {/* ROLEPERSPECTIVE 2: AGENTE (Response Officer Interface) */}
+            {hubRole === 'agente' && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start w-full"
+              >
+                {/* LEFT CORE: DISPATCH NOTIFICATION & GPS GPS NAVEGADOR */}
+                <div className="md:col-span-7 bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-xl space-y-6">
+                  
+                  {/* Officer active duty status header */}
+                  <div className="bg-slate-900/40 border border-white/[0.05] p-4 rounded-2xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                        <Shield className="w-5 h-5 animate-pulse" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-white">Unidad Hidalgo 04</h3>
+                        <p className="text-[10px] text-slate-400">Patrulla de Respuesta Inmediata Pachuca Centro</p>
+                      </div>
+                    </div>
+                    
                     <button 
-                      onClick={() => setShowAddContact(true)}
-                      className="px-2.5 py-1.5 bg-brand-red/10 text-brand-red hover:bg-brand-red/20 border border-brand-red/20 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                      onClick={() => setHubAgentActive(!hubAgentActive)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${hubAgentActive ? 'bg-emerald-400 text-slate-950 font-black' : 'bg-white/5 border border-white/10 text-slate-500'}`}
                     >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Agregar Contacto</span>
+                      <span className={`w-2 h-2 rounded-full ${hubAgentActive ? 'bg-slate-950' : 'bg-slate-600'}`} />
+                      <span>{hubAgentActive ? 'DISPONIBLE' : 'INACTIVO'}</span>
                     </button>
                   </div>
 
-                  {showAddContact && (
-                    <form onSubmit={handleAddContact} className="bg-slate-900/60 p-4 rounded-2xl border border-white/5 mb-4 grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Nombre</label>
-                        <input 
-                          type="text" 
-                          value={newContactName} 
-                          onChange={(e) => setNewContactName(e.target.value)}
-                          placeholder="Ej. Hermano" 
-                          required
-                          className="w-full bg-[#050608] border border-white/10 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-brand-red"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Teléfono</label>
-                        <input 
-                          type="tel" 
-                          value={newContactPhone} 
-                          onChange={(e) => setNewContactPhone(e.target.value)}
-                          placeholder="Ej. 771 999 8888" 
-                          required
-                          className="w-full bg-[#050608] border border-white/10 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-brand-red"
-                        />
-                      </div>
-                      <div className="md:col-span-2 flex justify-end gap-2 mt-2">
-                        <button 
-                          type="button" 
-                          onClick={() => setShowAddContact(false)}
-                          className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs text-slate-300"
-                        >
-                          Cancelar
-                        </button>
-                        <button 
-                          type="submit" 
-                          className="px-3 py-1.5 bg-brand-green/15 text-brand-green border border-brand-green/20 hover:bg-brand-green/25 rounded-lg text-xs font-bold"
-                        >
-                          Guardar
-                        </button>
-                      </div>
-                    </form>
-                  )}
+                  {/* Active Incident Dispatch Alert Card */}
+                  <div className={`p-5 rounded-2xl border transition-all duration-300 space-y-4 ${hubAlertAccepted ? 'bg-emerald-500/[0.02] border-emerald-500/15' : 'bg-red-500/[0.02] border-red-500/25 animate-pulse'}`}>
+                    <div className="flex justify-between items-start">
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[8px] font-black tracking-widest ${hubAlertAccepted ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-500'}`}>
+                        {hubAlertAccepted ? 'INCIDENTE ATENDIDO POR U-04' : 'C5i DISPATCH: CÓDIGO ROJO'}
+                      </span>
+                      <span className="text-xs text-slate-400 font-bold flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-red-500" />
+                        <span>a 1.2 km</span>
+                      </span>
+                    </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {contacts.map(contact => (
-                      <div key={contact.id} className="bg-[#13151a] p-3 rounded-xl border border-white/5 flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-bold text-white">{contact.name}</p>
-                          <p className="text-[10px] text-slate-400 font-mono mt-0.5">{contact.phone}</p>
-                        </div>
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-black text-white">Ciudadano: Rosa María Gómez (S.O.S.)</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        Ubicación: <span className="text-white font-bold">Av. Juárez esq. Guerrero, Pachuca Centro</span> (Referencia: Frente a Reloj Monumental)
+                      </p>
+                    </div>
+
+                    {!hubAlertAccepted ? (
+                      <div className="flex gap-3 pt-2">
                         <button 
-                          onClick={() => removeContact(contact.id, contact.name)}
-                          className="text-slate-500 hover:text-brand-red p-1 rounded transition-colors"
-                          title="Eliminar contacto"
+                          onClick={() => alert('Coordinando con central C5i para redistribuir patrulla...')}
+                          className="flex-1 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 text-xs font-bold transition-all cursor-pointer border border-white/[0.06]"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          Rechazar/Delegar
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setHubAlertAccepted(true);
+                            addLog({
+                              time: new Date().toLocaleTimeString(),
+                              type: 'success',
+                              message: '🚓 Unidad Hidalgo-04 aceptó la alerta de pánico. Trazando ruta crítica hacia Av. Juárez.'
+                            });
+                          }}
+                          className="flex-2 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-red-500/20"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Aceptar Despacho</span>
                         </button>
                       </div>
-                    ))}
+                    ) : (
+                      /* Active response route telemetry */
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="bg-slate-950/80 border border-emerald-500/20 p-4 rounded-xl space-y-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                            <span>EN RUTA CRÍTICA HACIA OBJETIVO</span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-mono">VEL: 54 km/h</span>
+                        </div>
+
+                        {/* Interactive compass & navigator panel */}
+                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.04] p-3 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 animate-pulse">
+                              <Navigation className="w-4 h-4 transform -rotate-45" />
+                            </div>
+                            <div>
+                              <div className="text-[11px] font-bold text-white">Continuar por Av. Juárez</div>
+                              <div className="text-[9px] text-slate-500">Da vuelta a la izquierda en 150m</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs font-mono font-black text-emerald-400">950 m</div>
+                            <div className="text-[9px] text-slate-500">Tiempo: 1.5 min</div>
+                          </div>
+                        </div>
+
+                        <button 
+                          onClick={() => alert('Simulador GPS: Ruta sincronizada activamente con despacho de C5i.')}
+                          className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer"
+                        >
+                          <Map className="w-4 h-4" />
+                          <span>Ver Mapa Táctico GPS</span>
+                        </button>
+                      </motion.div>
+                    )}
                   </div>
                 </div>
 
-                <div className="h-[1px] bg-white/5" />
+                {/* RIGHT CORE: CASE RESOLUTION & TECHNICAL REPORTS */}
+                <div className="md:col-span-5 bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-xl space-y-5">
+                  <div className="space-y-1.5 border-b border-white/[0.05] pb-4">
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-emerald-400" />
+                      <span>Informe Técnico Operativo</span>
+                    </h3>
+                    <p className="text-[10px] text-slate-400">Envío de evidencias y comentarios de resolución de alerta para base de datos de seguridad.</p>
+                  </div>
 
-                {/* Consola de despachos C5i */}
-                <div>
-                  <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 mb-3">
-                    <Activity className="w-4 h-4 text-brand-red animate-pulse" />
-                    Consola del Operador C4/C5i (Estado de Despacho del Hidalgo)
-                  </h3>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                        Diagnóstico / Resolución de Alerta
+                      </label>
+                      <textarea 
+                        value={hubClosingReport}
+                        onChange={(e) => setHubClosingReport(e.target.value)}
+                        placeholder="Ingresa la bitácora o resolución del incidente (ej. Alerta atendida. Ciudadano se encuentra seguro. Sin lesionados. Unidad Hidalgo-04 retorna a patrullaje)..."
+                        className="w-full bg-slate-950 border border-white/[0.08] focus:border-emerald-500/30 rounded-xl p-3 text-xs text-white placeholder-slate-500 outline-none h-28 resize-none transition-all leading-relaxed"
+                      />
+                    </div>
 
-                  <div className="bg-[#050608] rounded-2xl p-4 border border-white/5 h-[240px] overflow-y-auto font-mono text-xs space-y-2.5">
-                    {logs.map((log, index) => (
-                      <div key={index} className="flex gap-2.5 items-start leading-relaxed border-b border-white/3 pb-2 last:border-0 last:pb-0">
-                        <span className="text-slate-500 text-[10px] shrink-0 pt-0.5">{log.time}</span>
-                        <div className="flex-1">
-                          {log.type === 'success' && <span className="text-brand-green font-bold">[ÉXITO] </span>}
-                          {log.type === 'warning' && <span className="text-amber-500 font-bold">[SISTEMA] </span>}
-                          {log.type === 'error' && <span className="text-brand-red font-bold">[CRÍTICO] </span>}
-                          {log.type === 'info' && <span className="text-sky-400 font-bold">[INFO] </span>}
-                          <span className="text-slate-300">{log.message}</span>
-                        </div>
-                      </div>
-                    ))}
+                    <button 
+                      disabled={!hubClosingReport.trim() || hubReportSubmitted}
+                      onClick={() => {
+                        setHubReportSubmitted(true);
+                        addLog({
+                          time: new Date().toLocaleTimeString(),
+                          type: 'success',
+                          message: `📝 Reporte de Cierre Oficial (U-04): "${hubClosingReport.slice(0, 45)}..." guardado en histórico C5i.`
+                        });
+                        setTimeout(() => {
+                          setHubClosingReport('');
+                          setHubReportSubmitted(false);
+                          setHubAlertAccepted(false);
+                        }, 3000);
+                      }}
+                      className={`w-full py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        (!hubClosingReport.trim() || hubReportSubmitted) 
+                          ? 'bg-white/[0.03] text-slate-500 cursor-not-allowed border border-white/[0.05]' 
+                          : 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 hover:shadow-lg hover:shadow-emerald-500/20 active:scale-98'
+                      }`}
+                    >
+                      {hubReportSubmitted ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-slate-950" />
+                          <span>Reporte Enviado Correctamente</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          <span>Enviar Reporte Oficial</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
-
-              </div>
+              </motion.div>
             )}
 
-            {/* PESTAÑA 3: CRITERIOS DE DISEÑO UI/UX */}
-            {activeTab === 'info' && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-base font-bold text-white mb-2">Principios de Diseño de Alerta de Alto Impacto</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    En una situación de peligro real, las capacidades cognitivas y motoras del usuario se ven reducidas significativamente por el estrés y la adrenalina. La UI del Botón de Pánico debe centrarse en la <strong className="text-slate-200 font-semibold">ley de Fitts</strong> y la accesibilidad instantánea.
-                  </p>
+            {/* ROLEPERSPECTIVE 3: C4 CENTRAL & C5i DESPACHADOR (Control Center Interface) */}
+            {hubRole === 'c4' && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-6 w-full"
+              >
+                {/* TOP METRICS KPI BAR */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* KPI 1 */}
+                  <div className="bg-gradient-to-r from-[#0d152a]/60 to-[#070c1b]/60 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4.5 backdrop-blur-md">
+                    <div className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-black text-white">3.8 minutos</div>
+                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Tiempo de Reacción (Promedio)</div>
+                    </div>
+                  </div>
+
+                  {/* KPI 2 */}
+                  <div className="bg-gradient-to-r from-[#0d152a]/60 to-[#070c1b]/60 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4.5 backdrop-blur-md">
+                    <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                      <TrendingUp className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-black text-white">18 Unidades</div>
+                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Patrullas Activas en Turno</div>
+                    </div>
+                  </div>
+
+                  {/* KPI 3 */}
+                  <div className="bg-gradient-to-r from-[#0d152a]/60 to-[#070c1b]/60 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4.5 backdrop-blur-md">
+                    <div className="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                      <Activity className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-black text-white">47 Alarmas</div>
+                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Siniestros Atendidos Hoy</div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* MAIN SPLIT: TAC-MAP & LOGS CONSOLE */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   
-                  <div className="p-4 rounded-2xl bg-[#13151a] border border-white/5">
-                    <div className="flex items-center gap-2 mb-2 text-brand-red">
-                      <Shield className="w-5 h-5" />
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Ergonomía de Emergencia</h4>
+                  {/* COLA 1: LIVE TACTICAL SITUATION MAP */}
+                  <div className="lg:col-span-8 bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] rounded-3xl overflow-hidden backdrop-blur-md shadow-xl flex flex-col min-h-[420px]">
+                    
+                    {/* Header bar of map */}
+                    <div className="bg-slate-900/60 border-b border-white/[0.05] px-5 py-3.5 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-red-500 animate-pulse" />
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">Centro de Control de Enlace Satelital • C5i</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[9px] font-black animate-pulse">
+                        SITUACIÓN EN VIVO
+                      </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      El botón de pánico central ocupa el 62% del ancho de la pantalla y se ubica exactamente en la zona de barrido natural del pulgar, asegurando que pueda ser presionado sin estirar la mano.
-                    </p>
+
+                    {/* Styled Tacti-Map Area */}
+                    <div className="flex-1 h-80 relative bg-[#050914] flex flex-col justify-between p-4 border-b border-white/[0.02]">
+                      {/* Grid Radar overlay lines */}
+                      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+                      
+                      {/* Map concentric rings representing Pachuca radar ranges */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-44 h-44 rounded-full border border-white/[0.02] pointer-events-none" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full border border-white/[0.01] pointer-events-none" />
+
+                      {/* PATROL UNIT 04 MARKER */}
+                      <div className="absolute top-[30%] left-[28%] flex items-center gap-2 select-none">
+                        <span className="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse flex items-center justify-center">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />
+                        </span>
+                        <div className="bg-slate-950/90 border border-emerald-500/20 px-1.5 py-0.5 rounded text-[8px] font-black text-emerald-400 uppercase">
+                          Patrulla U-04 (Ruta)
+                        </div>
+                      </div>
+
+                      {/* PATROL UNIT 12 MARKER */}
+                      <div className="absolute top-[65%] left-[75%] flex items-center gap-2 select-none">
+                        <span className="w-3 h-3 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.8)] animate-pulse flex items-center justify-center">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />
+                        </span>
+                        <div className="bg-slate-950/90 border border-blue-500/20 px-1.5 py-0.5 rounded text-[8px] font-black text-blue-400 uppercase">
+                          Patrulla U-12 (Vigilancia)
+                        </div>
+                      </div>
+
+                      {/* CITIZEN SOS CRITICAL TRIGGER MARKER */}
+                      <div className="absolute top-[52%] left-[48%] flex flex-col items-center select-none">
+                        <span className="absolute w-12 h-12 rounded-full border-2 border-red-500 animate-ping opacity-65 pointer-events-none" />
+                        <span className="absolute w-20 h-20 rounded-full border border-red-500/20 animate-ping opacity-40 pointer-events-none" />
+                        
+                        <div className={`w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-lg transition-all ${panicActive ? 'bg-red-500 animate-bounce' : 'bg-[#1C0606] border border-red-500/30'}`}>
+                          <ShieldAlert className={`w-4 h-4 ${panicActive ? 'text-white' : 'text-red-500'}`} />
+                        </div>
+                        
+                        <div className="bg-slate-950/90 border border-red-500/30 px-2 py-0.5 rounded mt-1 text-[8px] font-black text-red-400 text-center uppercase tracking-wide">
+                          {panicActive ? 'SOS ACTIVO (R. Gómez)' : 'PUNTO DE MONITOREO'}
+                        </div>
+                      </div>
+
+                      {/* Map info bar overlay */}
+                      <div className="mt-auto w-full flex items-end justify-between z-10 pointer-events-none">
+                        <span className="text-[9px] text-slate-500 font-bold uppercase">PACHUCA DE SOTO • COBERTURA 100% C5i</span>
+                        <span className="text-[9px] text-slate-500 font-bold uppercase">Sincronización Satelital GPS: En Linea</span>
+                      </div>
+                    </div>
+
+                    {/* Quick map layers filters */}
+                    <div className="bg-slate-950/40 p-3.5 px-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.04]">
+                      <div className="flex items-center gap-3.5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Capas de Monitoreo:</span>
+                        <div className="flex items-center gap-2.5">
+                          <label className="flex items-center gap-1.5 text-xs text-slate-300 font-medium select-none">
+                            <input type="checkbox" defaultChecked className="rounded accent-emerald-500 cursor-pointer" />
+                            <span>Patrullas</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 text-xs text-slate-300 font-medium select-none">
+                            <input type="checkbox" defaultChecked className="rounded accent-red-500 cursor-pointer" />
+                            <span>Alarmas S.O.S</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 text-xs text-slate-300 font-medium select-none">
+                            <input type="checkbox" defaultChecked className="rounded accent-blue-500 cursor-pointer" />
+                            <span>Cámaras Viales</span>
+                          </label>
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-bold font-sans">
+                        Ubicación Central: Plaza Juárez, Hgo
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-[#13151a] border border-white/5">
-                    <div className="flex items-center gap-2 mb-2 text-brand-red">
-                      <Navigation className="w-5 h-5" />
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Acompáñame Compartido</h4>
+                  {/* COLA 2: SYSTEM LOGS TERMINAL FEED */}
+                  <div className="lg:col-span-4 bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] p-5 rounded-3xl backdrop-blur-md shadow-xl flex flex-col h-[420px]">
+                    <div className="border-b border-white/[0.05] pb-3 mb-3.5 flex items-center justify-between">
+                      <h4 className="text-[10px] font-black tracking-wider text-slate-400 uppercase">TELEMETRÍA EN VIVO (C5i)</h4>
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      La ruta segura de Acompáñame monitorea continuamente el GPS del ciudadano sin enviar patrullas de inmediato, permitiendo a familiares vigilar su trayecto con total discreción y paz mental.
-                    </p>
-                  </div>
 
-                  <div className="p-4 rounded-2xl bg-[#13151a] border border-white/5">
-                    <div className="flex items-center gap-2 mb-2 text-brand-red">
-                      <Radio className="w-5 h-5" />
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Modo Oscuro Profundo (Oled)</h4>
+                    {/* Console system streams */}
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-1 font-mono text-[10px] leading-relaxed select-text scrollbar-thin scrollbar-thumb-white/10">
+                      {logs.map((log, index) => (
+                        <div key={index} className="flex items-start gap-2 text-slate-300">
+                          <span className="text-slate-500 font-bold shrink-0">{log.time}</span>
+                          
+                          {/* Severity log badge */}
+                          <span className={`shrink-0 px-1 rounded text-[7.5px] font-black uppercase ${
+                            log.type === 'error' 
+                              ? 'bg-red-500/10 text-red-400' 
+                              : log.type === 'warning' 
+                                ? 'bg-amber-500/10 text-amber-400' 
+                                : log.type === 'success' 
+                                  ? 'bg-emerald-500/10 text-emerald-400' 
+                                  : 'bg-blue-500/10 text-blue-400'
+                          }`}>
+                            {log.type === 'error' ? 'ALERTA' : log.type === 'warning' ? 'GPS' : log.type === 'success' ? 'ÉXITO' : 'INFO'}
+                          </span>
+                          
+                          <span className="text-slate-200">{log.message}</span>
+                        </div>
+                      ))}
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      La paleta de color oscura (#08090c como base) no solo resalta el rojo neón de emergencia, sino que evita delatar al usuario en entornos de baja luminosidad (evitando iluminar su rostro).
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-[#13151a] border border-white/5">
-                    <div className="flex items-center gap-2 mb-2 text-brand-red">
-                      <AlertTriangle className="w-5 h-5" />
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Filtro Antierror</h4>
-                    </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      La cuenta regresiva de 5 segundos permite cancelar toques accidentales rápidamente sin generar falsos positivos ni saturar el centro de comando C5i de Hidalgo.
-                    </p>
                   </div>
 
                 </div>
-
-                <div className="p-4 rounded-2xl bg-gradient-to-tr from-brand-red/10 to-brand-fire/10 border border-brand-red/20">
-                  <h4 className="text-xs font-bold text-white mb-1.5 flex items-center gap-1.5">
-                    <Cpu className="w-4 h-4 text-brand-red" />
-                    Tecnologías sugeridas para Producción
-                  </h4>
-                  <ul className="text-[11px] text-slate-300 space-y-1.5 list-disc list-inside">
-                    <li><strong className="text-white">expo-location:</strong> Para el rastreo preciso de coordenadas de Hidalgo en segundo plano.</li>
-                    <li><strong className="text-white">expo-haptics:</strong> Para emitir vibraciones táctiles críticas al activar el botón de pánico.</li>
-                    <li><strong className="text-white">react-native-maps:</strong> Para renderizar mapas limpios con estilos oscuros personalizados.</li>
-                  </ul>
-                </div>
-              </div>
+              </motion.div>
             )}
 
           </div>
-
-          {/* Pie de página del panel de control */}
-          <div className="bg-[#0a0c0f] border-t border-white/5 px-6 py-4 flex justify-between items-center text-xs text-slate-400">
-            <span>© 2026 Seguridad Hidalgo • Alerta Móvil</span>
-            <span className="font-mono text-[10px] text-slate-500">Versión UI 1.4.2</span>
-          </div>
-
-        </section>
-
+        )}
       </main>
 
-      {/* FOOTER GENERAL */}
-      <footer id="web_footer" className="mt-auto border-t border-white/5 py-6 text-center text-xs text-slate-500">
-        <p>Diseñado en el Entorno Seguro de Hidalgo. Desarrollado con React Native, Expo y Tailwind CSS para despliegues fluidos de seguridad pública.</p>
+      {/* SYSTEM LOGS & METRICS FOOTER */}
+      <footer className="relative z-10 w-full bg-slate-950/60 border-t border-white/[0.05] p-5 text-center mt-auto">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] text-slate-500 font-semibold tracking-wide uppercase">
+          <div>ENTORNO SEGURO DE SEGURIDAD PÚBLICA • COBERTURA GUBERNAMENTAL • ESTADO DE HIDALGO, MÉXICO</div>
+          <div className="flex items-center gap-5">
+            <span className="flex items-center gap-1.5 font-sans">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>SISTEMA AUDITADO</span>
+            </span>
+            <span>BATERÍA GLOBAL: {batteryLevel}%</span>
+            <span>LICENCIA DE BASE: C5i-HIDALGO-PROD</span>
+          </div>
+        </div>
       </footer>
-
     </div>
   );
 }
