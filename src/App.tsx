@@ -36,7 +36,16 @@ import {
   Mic,
   Lock,
   Unlock,
-  Key
+  Key,
+  Play,
+  Square,
+  UserPlus,
+  Trash2,
+  Download,
+  Search,
+  Sliders,
+  ShieldCheck,
+  Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -1349,6 +1358,35 @@ export default function App() {
   const [reportPhoto, setReportPhoto] = useState<string | null>(null);
   const [isTakingReportPhoto, setIsTakingReportPhoto] = useState<boolean>(false);
 
+  // --- ESTADOS EXCLUSIVOS ROL 3 CENTRAL C4 / C5i ---
+  const [mapShowPatrols, setMapShowPatrols] = useState<boolean>(true);
+  const [mapShowAlerts, setMapShowAlerts] = useState<boolean>(true);
+  const [mapShowCameras, setMapShowCameras] = useState<boolean>(true);
+  const [mapShowRoutes, setMapShowRoutes] = useState<boolean>(true);
+  const [c4SelectedUnit, setC4SelectedUnit] = useState<string>('U-04');
+  const [c4Units, setC4Units] = useState<any[]>([
+    { id: 'U-04', name: 'Patrulla Hidalgo-04', lat: 20.09841, lng: -98.76123, status: 'Activo', officer: 'Oficial Hugo Benítez', signal: 'Excelente', type: 'Pachuca Centro' },
+    { id: 'U-12', name: 'Patrulla Hidalgo-12', lat: 20.09110, lng: -98.74500, status: 'Activo', officer: 'Oficial Diana Sánchez', signal: 'Excelente', type: 'Plaza Q' },
+    { id: 'U-18', name: 'Patrulla Hidalgo-18', lat: 20.10850, lng: -98.77500, status: 'Activo', officer: 'Oficial Carlos Pérez', signal: 'Estable', type: 'Zona Plateada' },
+    { id: 'U-09', name: 'Patrulla Hidalgo-09', lat: 20.10300, lng: -98.76200, status: 'Inactivo', officer: 'Oficial Lucía Torres', signal: 'Sin Señal', type: 'Col. Doctores' }
+  ]);
+  const [blackboxAudioPlaying, setBlackboxAudioPlaying] = useState<boolean>(false);
+  const [blackboxAudioDuration, setBlackboxAudioDuration] = useState<number>(0);
+  const [blackboxAnalyzing, setBlackboxAnalyzing] = useState<boolean>(false);
+  const [blackboxAnalysisResult, setBlackboxAnalysisResult] = useState<any>(null);
+  const [activeVoipCall, setActiveVoipCall] = useState<string | null>(null);
+  const [voipCallDuration, setVoipCallDuration] = useState<number>(0);
+  const [exportingReport, setExportingReport] = useState<boolean>(false);
+  const [exportedReportUrl, setExportedReportUrl] = useState<string | null>(null);
+  const [newOfficerName, setNewOfficerName] = useState<string>('');
+  const [newOfficerUnit, setNewOfficerUnit] = useState<string>('');
+  const [newOfficerRole, setNewOfficerRole] = useState<string>('Oficial de Campo');
+  const [c4Permissions, setC4Permissions] = useState<any>({
+    manualDispatchNoGeofence: true,
+    directSatelitalIntervention: true,
+    editLegalBitacora: false
+  });
+
   // Logs del Centro de Emergencias C4 Hidalgo
   const [logs, setLogs] = useState<LogEntry[]>([
     { time: '12:51:33', type: 'info', message: 'Sistema de Enlace Ciudadano Hidalgo C5i en línea.' },
@@ -1533,6 +1571,19 @@ export default function App() {
     }
     return () => clearInterval(trackingInterval);
   }, [hubAlertAccepted, victimMoving, hubRole, patrolLat, patrolLng, victimLat, victimLng]);
+
+  // --- EFECTO DE TEMPORIZADOR VOIP (ROL 3 C4) ---
+  useEffect(() => {
+    let voipInterval: NodeJS.Timeout;
+    if (activeVoipCall) {
+      voipInterval = setInterval(() => {
+        setVoipCallDuration(prev => prev + 1);
+      }, 1000);
+    } else {
+      setVoipCallDuration(0);
+    }
+    return () => clearInterval(voipInterval);
+  }, [activeVoipCall]);
 
   const addLog = (log: LogEntry) => {
     setLogs(prev => [log, ...prev].slice(0, 50));
@@ -3317,169 +3368,985 @@ export default function App() {
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="space-y-6 w-full"
+                className="space-y-6 w-full text-slate-200"
               >
-                {/* TOP METRICS KPI BAR */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* KPI 1 */}
-                  <div className="bg-[#000000]/80 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4.5 backdrop-blur-md">
+                {/* 4. Monitor y Métricas de Rendimiento (Módulo de KPI) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* KPI 1: Tiempo de Reacción */}
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4 backdrop-blur-md">
                     <div className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
-                      <Clock className="w-5 h-5" />
+                      <Clock className="w-5 h-5 animate-pulse" />
                     </div>
                     <div>
-                      <div className="text-lg font-black text-white">3.8 minutos</div>
-                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Tiempo de Reacción (Promedio)</div>
+                      <div className="text-lg font-black text-white">{reactionTimeKpi}</div>
+                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">T. de Reacción Promedio</div>
+                      <div className="text-[9px] text-red-400/80 font-mono mt-0.5">Desde SOS hasta Aceptación</div>
                     </div>
                   </div>
 
-                  {/* KPI 2 */}
-                  <div className="bg-[#000000]/80 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4.5 backdrop-blur-md">
+                  {/* KPI 2: Tiempo de Llegada */}
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4 backdrop-blur-md">
+                    <div className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                      <Navigation className="w-5 h-5 transform -rotate-45" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-black text-white">{arrivalTimeKpi}</div>
+                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">T. de Llegada Promedio</div>
+                      <div className="text-[9px] text-amber-400/80 font-mono mt-0.5">Desde Aceptación a Escena</div>
+                    </div>
+                  </div>
+
+                  {/* KPI 3: Oficiales Activos */}
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4 backdrop-blur-md">
                     <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-black text-white">
+                        {c4Units.filter(u => u.status === 'Activo').length} / {c4Units.length}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Patrullas Activas Hoy</div>
+                      <div className="text-[9px] text-emerald-400/80 font-mono mt-0.5">Enlace satelital GPS en vivo</div>
+                    </div>
+                  </div>
+
+                  {/* KPI 4: Tasa de Efectividad */}
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4 backdrop-blur-md">
+                    <div className="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                       <TrendingUp className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="text-lg font-black text-white">18 Unidades</div>
-                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Patrullas Activas en Turno</div>
-                    </div>
-                  </div>
-
-                  {/* KPI 3 */}
-                  <div className="bg-[#000000]/80 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4.5 backdrop-blur-md">
-                    <div className="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                      <Activity className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-black text-white">47 Alarmas</div>
-                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Siniestros Atendidos Hoy</div>
+                      <div className="text-lg font-black text-white">94.5%</div>
+                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Tasa de Efectividad</div>
+                      <div className="text-[9px] text-blue-400/80 font-mono mt-0.5">Reportes Reales vs Falsos</div>
                     </div>
                   </div>
                 </div>
 
-                {/* MAIN SPLIT: TAC-MAP & LOGS CONSOLE */}
+                {/* MAIN GRID: SYSTEM CONTROLS & MONITORING */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   
-                  {/* COLA 1: LIVE TACTICAL SITUATION MAP */}
-                  <div className="lg:col-span-8 bg-[#000000]/80 border border-white/[0.08] rounded-3xl overflow-hidden backdrop-blur-md shadow-xl flex flex-col min-h-[420px]">
-                    
-                    {/* Header bar of map */}
-                    <div className="bg-slate-900/60 border-b border-white/[0.05] px-5 py-3.5 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-red-500 animate-pulse" />
-                        <span className="text-xs font-bold text-white uppercase tracking-wider">Centro de Control de Enlace Satelital • C5i</span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[9px] font-black animate-pulse">
-                        SITUACIÓN EN VIVO
-                      </span>
-                    </div>
+                  {/* LEFT CORE COLUMN: MAP & IA COGNITIVE AGENT (8 Cols) */}
+                  <div className="lg:col-span-8 space-y-6">
 
-                    {/* Styled Tacti-Map Area */}
-                    <div className="flex-1 h-80 relative bg-[#000000] flex flex-col justify-between p-4 border-b border-white/[0.02]">
-                      {/* Grid Radar overlay lines */}
-                      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
-                      
-                      {/* Map concentric rings representing Pachuca radar ranges */}
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-44 h-44 rounded-full border border-white/[0.02] pointer-events-none" />
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full border border-white/[0.01] pointer-events-none" />
-
-                      {/* PATROL UNIT 04 MARKER */}
-                      <div className="absolute top-[30%] left-[28%] flex items-center gap-2 select-none">
-                        <span className="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse flex items-center justify-center">
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />
-                        </span>
-                        <div className="bg-slate-950/90 border border-emerald-500/20 px-1.5 py-0.5 rounded text-[8px] font-black text-emerald-400 uppercase">
-                          Patrulla U-04 (Ruta)
-                        </div>
-                      </div>
-
-                      {/* PATROL UNIT 12 MARKER */}
-                      <div className="absolute top-[65%] left-[75%] flex items-center gap-2 select-none">
-                        <span className="w-3 h-3 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.8)] animate-pulse flex items-center justify-center">
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />
-                        </span>
-                        <div className="bg-slate-950/90 border border-blue-500/20 px-1.5 py-0.5 rounded text-[8px] font-black text-blue-400 uppercase">
-                          Patrulla U-12 (Vigilancia)
-                        </div>
-                      </div>
-
-                      {/* CITIZEN SOS CRITICAL TRIGGER MARKER */}
-                      <div className="absolute top-[52%] left-[48%] flex flex-col items-center select-none">
-                        <span className="absolute w-12 h-12 rounded-full border-2 border-red-500 animate-ping opacity-65 pointer-events-none" />
-                        <span className="absolute w-20 h-20 rounded-full border border-red-500/20 animate-ping opacity-40 pointer-events-none" />
-                        
-                        <div className={`w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-lg transition-all ${panicActive ? 'bg-red-500 animate-bounce' : 'bg-[#1C0606] border border-red-500/30'}`}>
-                          <ShieldAlert className={`w-4 h-4 ${panicActive ? 'text-white' : 'text-red-500'}`} />
-                        </div>
-                        
-                        <div className="bg-slate-950/90 border border-red-500/30 px-2 py-0.5 rounded mt-1 text-[8px] font-black text-red-400 text-center uppercase tracking-wide">
-                          {panicActive ? 'SOS ACTIVO (R. Gómez)' : 'PUNTO DE MONITOREO'}
-                        </div>
-                      </div>
-
-                      {/* Map info bar overlay */}
-                      <div className="mt-auto w-full flex items-end justify-between z-10 pointer-events-none">
-                        <span className="text-[9px] text-slate-500 font-bold uppercase">PACHUCA DE SOTO • COBERTURA 100% C5i</span>
-                        <span className="text-[9px] text-slate-500 font-bold uppercase">Sincronización Satelital GPS: En Linea</span>
-                      </div>
-                    </div>
-
-                    {/* Quick map layers filters */}
-                    <div className="bg-slate-950/40 p-3.5 px-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.04]">
-                      <div className="flex items-center gap-3.5">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Capas de Monitoreo:</span>
+                    {/* 1. Consola de Despacho en Tiempo Real (Mapeo) */}
+                    <div className="bg-[#000000]/80 border border-white/[0.08] rounded-3xl overflow-hidden backdrop-blur-md shadow-xl flex flex-col">
+                      {/* Header bar of map */}
+                      <div className="bg-slate-900/60 border-b border-white/[0.05] px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-2.5">
-                          <label className="flex items-center gap-1.5 text-xs text-slate-300 font-medium select-none">
-                            <input type="checkbox" defaultChecked className="rounded accent-emerald-500 cursor-pointer" />
-                            <span>Patrullas</span>
-                          </label>
-                          <label className="flex items-center gap-1.5 text-xs text-slate-300 font-medium select-none">
-                            <input type="checkbox" defaultChecked className="rounded accent-red-500 cursor-pointer" />
-                            <span>Alarmas S.O.S</span>
-                          </label>
-                          <label className="flex items-center gap-1.5 text-xs text-slate-300 font-medium select-none">
-                            <input type="checkbox" defaultChecked className="rounded accent-blue-500 cursor-pointer" />
-                            <span>Cámaras Viales</span>
-                          </label>
+                          <Map className="w-5 h-5 text-red-500 animate-pulse" />
+                          <div>
+                            <h3 className="text-xs font-bold text-white uppercase tracking-wider">1. Consola de Despacho en Tiempo Real (Mapeo)</h3>
+                            <p className="text-[9px] text-slate-400">Coordinación centralizada de recursos municipales de seguridad C5i</p>
+                          </div>
+                        </div>
+                        <span className="self-start sm:self-auto px-2.5 py-0.5 rounded-md bg-red-500/10 border border-red-500/25 text-red-400 text-[9px] font-black animate-pulse flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                          MONITOREO GEOGRÁFICO EN VIVO
+                        </span>
+                      </div>
+
+                      {/* Styled Tacti-Map Area */}
+                      <div className="h-96 relative bg-[#030712] overflow-hidden p-4 flex flex-col justify-between">
+                        {/* Grid Radar overlay lines */}
+                        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
+                        
+                        {/* Map concentric rings representing Pachuca radar ranges */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-44 h-44 rounded-full border border-white/[0.03] pointer-events-none" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full border border-white/[0.015] pointer-events-none animate-pulse" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] rounded-full border border-white/[0.008] pointer-events-none" />
+
+                        {/* Interactive Route Polyline between Patrol and Victim (Rosa María Gómez) if alert accepted and route toggled */}
+                        {mapShowRoutes && (panicActive || hubAlertAccepted) && (
+                          <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                            <defs>
+                              <linearGradient id="c4RouteGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#10b981" />
+                                <stop offset="50%" stopColor="#3b82f6" />
+                                <stop offset="100%" stopColor="#ef4444" />
+                              </linearGradient>
+                            </defs>
+                            {/* Line path representing traffic-optimal critical routing */}
+                            <motion.path 
+                              d="M 180 120 Q 240 260 380 190" 
+                              fill="none" 
+                              stroke="url(#c4RouteGradient)" 
+                              strokeWidth="3.5" 
+                              strokeLinecap="round"
+                              strokeDasharray="8 6"
+                              animate={{ strokeDashoffset: [0, -30] }}
+                              transition={{ repeat: Infinity, duration: 1.8, ease: "linear" }}
+                            />
+                            <text x="210" y="210" fill="#3b82f6" className="text-[8px] font-mono font-bold uppercase tracking-widest opacity-80">Ruta de Respuesta Crítica</text>
+                          </svg>
+                        )}
+
+                        {/* PATROLLING UNITS MARKERS */}
+                        {mapShowPatrols && c4Units.map((unit) => {
+                          // Dynamic coordinates translation on styled stage
+                          let top = '30%';
+                          let left = '25%';
+                          if (unit.id === 'U-12') { top = '65%'; left = '72%'; }
+                          if (unit.id === 'U-18') { top = '22%'; left = '65%'; }
+                          if (unit.id === 'U-09') { top = '78%'; left = '15%'; }
+
+                          const isSelected = c4SelectedUnit === unit.id;
+
+                          return (
+                            <div 
+                              key={unit.id}
+                              style={{ top, left }}
+                              onClick={() => {
+                                setC4SelectedUnit(unit.id);
+                                addLog({
+                                  time: new Date().toLocaleTimeString(),
+                                  type: 'info',
+                                  message: `🔎 [MAPA CENTRAL] Detalle consultados de la ${unit.name} • Oficial: ${unit.officer} • Estado: ${unit.status}`
+                                });
+                              }}
+                              className={`absolute flex items-center gap-2 select-none cursor-pointer group transition-all duration-300 ${isSelected ? 'scale-110 z-30' : 'opacity-80 hover:opacity-100 z-10'}`}
+                            >
+                              <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${
+                                unit.status === 'Activo' 
+                                  ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)] animate-pulse' 
+                                  : 'bg-slate-600 border border-white/20'
+                              }`}>
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />
+                              </span>
+                              
+                              <div className={`p-2 rounded-xl text-[8.5px] font-bold font-mono border backdrop-blur-md flex flex-col gap-0.5 transition-all ${
+                                isSelected 
+                                  ? 'bg-slate-950/90 border-emerald-400 text-emerald-400 shadow-[0_4px_12px_rgba(52,211,153,0.15)]' 
+                                  : 'bg-slate-950/70 border-white/10 text-slate-300 group-hover:border-white/30'
+                              }`}>
+                                <span className="font-black uppercase flex items-center gap-1">
+                                  <Shield className="w-2.5 h-2.5" />
+                                  {unit.id} ({unit.status})
+                                </span>
+                                <span className="text-[7.5px] text-slate-400 font-sans block truncate max-w-[110px]">{unit.officer}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* CITIZEN SOS CRITICAL TRIGGER MARKER (Rosa María Gómez) */}
+                        {mapShowAlerts && (
+                          <div className="absolute top-[48%] left-[48%] flex flex-col items-center select-none z-20">
+                            {panicActive ? (
+                              <>
+                                <span className="absolute w-14 h-14 rounded-full border-2 border-red-500 animate-ping opacity-75 pointer-events-none" />
+                                <span className="absolute w-24 h-24 rounded-full border border-red-500/25 animate-ping opacity-45 pointer-events-none" />
+                                
+                                <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.8)] border border-red-400 animate-bounce cursor-pointer">
+                                  <ShieldAlert className="w-4.5 h-4.5 text-white" />
+                                </div>
+                                
+                                <div className="bg-slate-950/95 border-2 border-red-500/50 px-2.5 py-1 rounded-xl mt-1.5 text-[9px] font-mono font-black text-red-400 text-center uppercase tracking-wide shadow-2xl">
+                                  🚨 SOS ACTIVO: ROSA GÓMEZ
+                                  <span className="text-[7.5px] text-slate-400 block font-sans font-normal mt-0.5">Av. Juárez, Pachuca Centro</span>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-6 h-6 rounded-full bg-slate-900 border border-white/20 flex items-center justify-center text-slate-500 opacity-60">
+                                  <MapPin className="w-3 h-3" />
+                                </div>
+                                <div className="bg-slate-950/80 border border-white/10 px-1.5 py-0.5 rounded mt-1 text-[8px] text-slate-500 font-bold">
+                                  MONITOREO INACTIVO
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Simulated traffic cameras map markers */}
+                        {mapShowCameras && (
+                          <>
+                            {/* Cam 1 */}
+                            <div className="absolute top-[25%] left-[78%] opacity-50 flex items-center gap-1">
+                              <Camera className="w-3 h-3 text-blue-400" />
+                              <span className="text-[7.5px] font-mono font-bold text-slate-500 bg-slate-950/60 px-1 rounded">CAM-01 (Juárez)</span>
+                            </div>
+                            {/* Cam 2 */}
+                            <div className="absolute top-[70%] left-[20%] opacity-50 flex items-center gap-1">
+                              <Camera className="w-3 h-3 text-blue-400" />
+                              <span className="text-[7.5px] font-mono font-bold text-slate-500 bg-slate-950/60 px-1 rounded">CAM-02 (Reloj)</span>
+                            </div>
+                          </>
+                        )}
+
+                        {/* Map info bar overlay */}
+                        <div className="mt-auto w-full flex items-end justify-between z-10 pointer-events-none text-slate-400">
+                          <span className="text-[9px] font-bold uppercase tracking-wider bg-slate-950/80 px-2 py-0.5 rounded border border-white/5">COBERTURA CENTRAL C5i HIDALGO</span>
+                          <span className="text-[9px] font-mono bg-slate-950/80 px-2 py-0.5 rounded border border-white/5">Satellites Tracked: 08 (GPS Online)</span>
                         </div>
                       </div>
-                      <div className="text-[10px] text-slate-400 font-bold font-sans">
-                        Ubicación Central: Plaza Juárez, Hgo
+
+                      {/* Map layers selection filters */}
+                      <div className="bg-slate-950/40 p-4 px-5 flex flex-wrap items-center justify-between gap-4 border-t border-white/[0.04]">
+                        <div className="flex flex-wrap items-center gap-4">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Capas de Monitoreo:</span>
+                          <div className="flex flex-wrap items-center gap-3.5">
+                            <label className="flex items-center gap-1.5 text-xs text-slate-300 font-medium select-none cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={mapShowPatrols} 
+                                onChange={(e) => setMapShowPatrols(e.target.checked)}
+                                className="rounded accent-emerald-500 w-3.5 h-3.5 cursor-pointer" 
+                              />
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                Patrullas Policiales
+                              </span>
+                            </label>
+                            
+                            <label className="flex items-center gap-1.5 text-xs text-slate-300 font-medium select-none cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={mapShowAlerts} 
+                                onChange={(e) => setMapShowAlerts(e.target.checked)}
+                                className="rounded accent-red-500 w-3.5 h-3.5 cursor-pointer" 
+                              />
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                Alertas de Pánico S.O.S
+                              </span>
+                            </label>
+
+                            <label className="flex items-center gap-1.5 text-xs text-slate-300 font-medium select-none cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={mapShowCameras} 
+                                onChange={(e) => setMapShowCameras(e.target.checked)}
+                                className="rounded accent-blue-500 w-3.5 h-3.5 cursor-pointer" 
+                              />
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                Cámaras Viales C5i
+                              </span>
+                            </label>
+
+                            <label className="flex items-center gap-1.5 text-xs text-slate-300 font-medium select-none cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={mapShowRoutes} 
+                                onChange={(e) => setMapShowRoutes(e.target.checked)}
+                                className="rounded accent-amber-500 w-3.5 h-3.5 cursor-pointer" 
+                              />
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                Rutas de Respuesta Activa
+                              </span>
+                            </label>
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-bold font-mono bg-slate-950 px-2.5 py-1 rounded border border-white/5">
+                          Ubicación Focal: Plaza Juárez, Pachuca
+                        </div>
                       </div>
                     </div>
+
+                    {/* 2. Filtro Inteligente de Alertas con IA */}
+                    <div className="bg-[#000000]/80 border border-white/[0.08] p-5.5 rounded-3xl backdrop-blur-md space-y-4">
+                      <div>
+                        <h3 className="text-sm font-black text-white flex items-center gap-2">
+                          <Cpu className="w-5 h-5 text-red-500 animate-pulse" />
+                          <span>2. Filtro Inteligente de Alertas con IA de Crisis</span>
+                        </h3>
+                        <p className="text-[10px] text-slate-400">Procesamiento cognitivo acústico de la "Caja Negra" del ciudadano en peligro</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Audio Blackbox Player Panel */}
+                        <div className="bg-slate-950/60 p-4.5 rounded-2xl border border-white/[0.04] space-y-3.5">
+                          <span className="text-[9.5px] font-black tracking-widest text-slate-400 uppercase block">REPRODUCTOR DE CAJA NEGRA (8 SEG)</span>
+                          
+                          {/* Simulated audio waveform visualizer */}
+                          <div className="bg-[#030712] border border-white/[0.02] p-4 rounded-xl flex flex-col justify-center gap-3">
+                            <div className="flex items-center justify-between text-[10px] font-mono text-slate-500">
+                              <span>AUDIO_SEC_008_RAW.WAV</span>
+                              <span>{blackboxAudioPlaying ? `00:0${blackboxAudioDuration}s / 00:08s` : 'Pausado'}</span>
+                            </div>
+
+                            {/* Wave bars */}
+                            <div className="flex items-end justify-center gap-1 h-12 py-1">
+                              {[10, 40, 20, 60, 80, 45, 90, 100, 75, 50, 85, 95, 60, 30, 70, 95, 45, 20, 80, 50].map((h, i) => (
+                                <motion.div 
+                                  key={i}
+                                  style={{ height: `${h}%` }}
+                                  animate={blackboxAudioPlaying ? {
+                                    height: [`${h * 0.4}%`, `${h * 1.1}%`, `${h * 0.4}%`]
+                                  } : { height: '15%' }}
+                                  transition={{
+                                    repeat: Infinity,
+                                    duration: 0.6 + (i * 0.04),
+                                    ease: "easeInOut"
+                                  }}
+                                  className={`w-1 rounded-full ${blackboxAudioPlaying ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' : 'bg-slate-700'}`}
+                                />
+                              ))}
+                            </div>
+
+                            {/* Control button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (blackboxAudioPlaying) {
+                                  setBlackboxAudioPlaying(false);
+                                  setBlackboxAudioDuration(0);
+                                } else {
+                                  setBlackboxAudioPlaying(true);
+                                  addLog({
+                                    time: new Date().toLocaleTimeString(),
+                                    type: 'info',
+                                    message: '🔊 [C4 REPRODUCTOR] Escuchando fragmento inicial de 8 segundos del micrófono de la Caja Negra del ciudadano...'
+                                  });
+                                  
+                                  // Simple sound feedback
+                                  try {
+                                    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                                    const osc = audioCtx.createOscillator();
+                                    const gain = audioCtx.createGain();
+                                    osc.type = 'sawtooth';
+                                    osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+                                    gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+                                    osc.connect(gain);
+                                    gain.connect(audioCtx.destination);
+                                    osc.start();
+                                    setTimeout(() => {
+                                      osc.stop();
+                                      audioCtx.close();
+                                    }, 1000);
+                                  } catch (e) {}
+
+                                  let dur = 0;
+                                  const iv = setInterval(() => {
+                                    dur += 1;
+                                    setBlackboxAudioDuration(dur);
+                                    if (dur >= 8) {
+                                      clearInterval(iv);
+                                      setBlackboxAudioPlaying(false);
+                                      setBlackboxAudioDuration(0);
+                                      addLog({
+                                        time: new Date().toLocaleTimeString(),
+                                        type: 'success',
+                                        message: '✓ [C4 REPRODUCTOR] Fin de la reproducción del audio de emergencia. Proceder con el filtrado por IA.'
+                                      });
+                                    }
+                                  }, 1000);
+                                }
+                              }}
+                              className={`w-full py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                blackboxAudioPlaying 
+                                  ? 'bg-red-500 text-white shadow-lg' 
+                                  : 'bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] border border-white/[0.06]'
+                              }`}
+                            >
+                              {blackboxAudioPlaying ? (
+                                <>
+                                  <Square className="w-3.5 h-3.5" />
+                                  <span>Detener Reproducción</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span>Reproducir Caja Negra (8 seg)</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Cognitive AI Analyzer Trigger Block */}
+                        <div className="bg-slate-950/60 p-4.5 rounded-2xl border border-white/[0.04] flex flex-col justify-between">
+                          <div>
+                            <span className="text-[9.5px] font-black tracking-widest text-slate-400 uppercase block mb-2">PROCESADOR COGNITIVO GUBERNAMENTAL (C5i-AI)</span>
+                            <p className="text-[10px] text-slate-400 leading-normal mb-3">
+                              Filtra ruidos de crisis ambientales, voces alteradas y posibles detonaciones para priorizar incidentes de manera automática.
+                            </p>
+                          </div>
+
+                          {blackboxAnalyzing ? (
+                            <div className="py-4 text-center space-y-2">
+                              <span className="inline-block w-6 h-6 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin mx-auto" />
+                              <div className="text-[10px] text-emerald-400 font-bold tracking-wide">Analizando firmas de ondas acústicas con IA...</div>
+                            </div>
+                          ) : blackboxAnalysisResult ? (
+                            <div className="bg-[#030712] border border-emerald-500/10 p-3 rounded-xl text-xs space-y-2">
+                              <div className="flex justify-between items-center border-b border-white/[0.05] pb-1.5">
+                                <span className="text-[10px] font-bold text-slate-400">RESULTADO DE IA COGNITIVA:</span>
+                                <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-400 font-black text-[9px] uppercase">
+                                  URGENCIA CRÍTICA
+                                </span>
+                              </div>
+                              
+                              <div className="space-y-1 text-[10px] text-slate-300">
+                                <div className="flex justify-between">
+                                  <span>🚨 Gritos vocales agudos detectados:</span>
+                                  <span className="font-mono text-emerald-400 font-black">95.4%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>💥 Impactos secos de forcejeo:</span>
+                                  <span className="font-mono text-emerald-400 font-black">88.2%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>🔊 Ambiente compatible con vía pública:</span>
+                                  <span className="font-mono text-emerald-400 font-black">74.0%</span>
+                                </div>
+                              </div>
+
+                              <p className="text-[9px] text-slate-400 italic leading-snug pt-1 border-t border-white/[0.03]">
+                                * El motor de IA municipal ha calificado este reporte con prioridad 100/100. Se recomienda despacho prioritario por geocerca.
+                              </p>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBlackboxAnalyzing(true);
+                                setTimeout(() => {
+                                  setBlackboxAnalyzing(false);
+                                  setBlackboxAnalysisResult(true);
+                                  addLog({
+                                    time: new Date().toLocaleTimeString(),
+                                    type: 'success',
+                                    message: '🧠 [IA DE CRISIS] Clasificación completada: Urgencia Máxima. Gritos y forcejeos verificados acústicamente.'
+                                  });
+                                }, 1500);
+                              }}
+                              className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-500/10 hover:scale-[1.01]"
+                            >
+                              <Cpu className="w-4 h-4" />
+                              <span>Analizar Caja Negra con IA</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 3. Gestión y Despacho Manual Avanzado */}
+                    <div className="bg-[#000000]/80 border border-white/[0.08] p-5.5 rounded-3xl backdrop-blur-md space-y-4">
+                      <div>
+                        <h3 className="text-sm font-black text-white flex items-center gap-2">
+                          <Sliders className="w-5 h-5 text-emerald-400" />
+                          <span>3. Gestión y Despacho Manual Avanzado (Forzado de Canal)</span>
+                        </h3>
+                        <p className="text-[10px] text-slate-400">Anulación manual de asignaciones automáticas de geofencing en caso de imprevistos</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Force Assign Patrol Form */}
+                        <div className="bg-slate-950/60 p-4.5 rounded-2xl border border-white/[0.04] flex flex-col justify-between gap-3">
+                          <div className="space-y-1">
+                            <span className="text-[9.5px] font-black tracking-widest text-slate-400 uppercase block">FORZAR ASIGNACIÓN DIRECTA</span>
+                            <p className="text-[10px] text-slate-500">Selecciona una patrulla municipal disponible para canalizar de forma manual.</p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[9px] text-slate-400 uppercase font-bold block">Seleccionar Unidad Policial:</label>
+                            <select
+                              value={c4SelectedUnit}
+                              onChange={(e) => setC4SelectedUnit(e.target.value)}
+                              className="w-full bg-slate-900 border border-white/10 text-white text-xs rounded-xl px-3 py-2.5 outline-none font-semibold focus:border-emerald-500/30"
+                            >
+                              {c4Units.map(unit => (
+                                <option key={unit.id} value={unit.id} className="bg-slate-950 text-white">
+                                  {unit.name} ({unit.officer}) • {unit.status}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const targetUnit = c4Units.find(u => u.id === c4SelectedUnit);
+                              setHubAlertAccepted(true);
+                              setAcceptedAlertTime(new Date().toLocaleTimeString());
+                              addLog({
+                                time: new Date().toLocaleTimeString(),
+                                type: 'warning',
+                                message: `🚓 [DESPACHO MANUAL FORZADO] Despachador C5i anuló algoritmo de geocerca automática y forzó asignación de la alerta a: ${targetUnit?.name} (${targetUnit?.officer}).`
+                              });
+                              alert(`Se ha forzado de forma manual la asignación crítica de la emergencia a la ${targetUnit?.name}. La unidad recibirá en su pantalla el enrutamiento satelital de forma inmediata.`);
+                            }}
+                            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black rounded-xl border border-white/[0.08] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Forzar Enrutamiento Directo</span>
+                          </button>
+                        </div>
+
+                        {/* Direct VoIP satelital phone confirm system */}
+                        <div className="bg-slate-950/60 p-4.5 rounded-2xl border border-white/[0.04] space-y-3 flex flex-col justify-between">
+                          <div>
+                            <span className="text-[9.5px] font-black tracking-widest text-slate-400 uppercase block">PANEL DE LLAMADAS S.O.S (VOIP SATELITAL)</span>
+                            <p className="text-[10px] text-slate-500 leading-normal">
+                              Establece enlace de voz satelital encriptado con los contactos de confianza de la víctima para verificación colateral.
+                            </p>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            {/* Contact 1 */}
+                            <div className="bg-[#030712] border border-white/[0.02] p-2.5 rounded-xl flex items-center justify-between text-xs">
+                              <div>
+                                <span className="font-bold text-white text-[11px] block">Juan Gómez (Padre)</span>
+                                <span className="text-[9px] text-slate-400 font-mono">Movil: 771 123 4567</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveVoipCall('Juan Gómez');
+                                  addLog({
+                                    time: new Date().toLocaleTimeString(),
+                                    type: 'info',
+                                    message: '📞 [VOIP SATELITAL] Marcando enlace VoIP satelital directo con Juan Gómez (Padre)...'
+                                  });
+                                }}
+                                className="py-1 px-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 text-slate-950 rounded-lg text-[9px] font-black transition-all cursor-pointer flex items-center gap-1"
+                              >
+                                <Phone className="w-2.5 h-2.5" />
+                                <span>Llamar</span>
+                              </button>
+                            </div>
+
+                            {/* Contact 2 */}
+                            <div className="bg-[#030712] border border-white/[0.02] p-2.5 rounded-xl flex items-center justify-between text-xs">
+                              <div>
+                                <span className="font-bold text-white text-[11px] block">Lucía Gómez (Hermana)</span>
+                                <span className="text-[9px] text-slate-400 font-mono">Movil: 771 987 6543</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveVoipCall('Lucía Gómez');
+                                  addLog({
+                                    time: new Date().toLocaleTimeString(),
+                                    type: 'info',
+                                    message: '📞 [VOIP SATELITAL] Marcando enlace VoIP satelital directo con Lucía Gómez (Hermana)...'
+                                  });
+                                }}
+                                className="py-1 px-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 text-slate-950 rounded-lg text-[9px] font-black transition-all cursor-pointer flex items-center gap-1"
+                              >
+                                <Phone className="w-2.5 h-2.5" />
+                                <span>Llamar</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
 
-                  {/* COLA 2: SYSTEM LOGS TERMINAL FEED */}
-                  <div className="lg:col-span-4 bg-[#000000]/80 border border-white/[0.08] p-5 rounded-3xl backdrop-blur-md shadow-xl flex flex-col h-[420px]">
-                    <div className="border-b border-white/[0.05] pb-3 mb-3.5 flex items-center justify-between">
-                      <h4 className="text-[10px] font-black tracking-wider text-slate-400 uppercase">TELEMETRÍA EN VIVO (C5i)</h4>
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  {/* RIGHT CONSOLE COLUMN: REPORTS, PERMISSIONS & ACCOUNT MANAGEMENT (4 Cols) */}
+                  <div className="lg:col-span-4 space-y-6">
+
+                    {/* VoIP Active Dial Modal Widget */}
+                    <AnimatePresence>
+                      {activeVoipCall && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                          className="bg-gradient-to-br from-slate-900 to-[#0e1629] border border-emerald-500/30 p-5 rounded-3xl shadow-2xl space-y-4 relative overflow-hidden"
+                        >
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full filter blur-xl pointer-events-none" />
+                          
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 animate-pulse">
+                              <Phone className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className="text-[10px] uppercase font-black text-emerald-400 tracking-wider">Llamada VoIP Activa (C5i-Satelital)</div>
+                              <h4 className="text-sm font-black text-white">{activeVoipCall}</h4>
+                            </div>
+                          </div>
+
+                          <div className="bg-slate-950/80 p-3.5 rounded-xl border border-white/[0.02] flex items-center justify-between">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase">Duración de llamada:</span>
+                            <span className="text-sm font-black text-white font-mono">
+                              {Math.floor(voipCallDuration / 60)}:{(voipCallDuration % 60).toString().padStart(2, '0')}
+                            </span>
+                          </div>
+
+                          {/* Pulsing voice bar indicator */}
+                          <div className="flex items-center justify-center gap-1.5 h-6">
+                            {[1,2,3,4,5,6,7,8].map((v) => (
+                              <motion.span 
+                                key={v}
+                                animate={{ height: [4, 16, 4] }}
+                                transition={{ repeat: Infinity, duration: 0.4 + (v * 0.05), ease: "easeInOut" }}
+                                className="w-1 rounded bg-emerald-400"
+                              />
+                            ))}
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                addLog({
+                                  time: new Date().toLocaleTimeString(),
+                                  type: 'info',
+                                  message: `💬 [LLAMADA REGISTRADA] Se grabó de manera legal la confirmación VoIP con ${activeVoipCall}.`
+                                });
+                                alert('El audio de la llamada se ha encriptado e indexado en la bitácora legal con éxito.');
+                              }}
+                              className="flex-1 py-1.5 bg-slate-950 hover:bg-slate-900 text-slate-300 text-[10px] font-bold rounded-lg border border-white/5 transition-all cursor-pointer"
+                            >
+                              Registrar en Bitácora
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                addLog({
+                                  time: new Date().toLocaleTimeString(),
+                                  type: 'info',
+                                  message: `📞 [LLAMADA FINALIZADA] Enlace VoIP satelital cerrado con ${activeVoipCall}. Duración: ${voipCallDuration} segundos.`
+                                });
+                                setActiveVoipCall(null);
+                              }}
+                              className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black rounded-lg transition-all cursor-pointer"
+                            >
+                              Colgar
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* KPI municipal PDF/Excel generation area */}
+                    <div className="bg-[#000000]/80 border border-white/[0.08] p-5 rounded-[28px] backdrop-blur-md shadow-xl space-y-4">
+                      <div className="space-y-1">
+                        <span className="text-[9.5px] font-black tracking-widest text-slate-400 uppercase block">INFORMES OPERATIVOS & RENDIMIENTO</span>
+                        <h4 className="text-xs font-black text-white">Auditoría Municipal con Validez Jurídica</h4>
+                        <p className="text-[10px] text-slate-500 leading-normal">
+                          Genera reportes de KPIs con sellos gubernamentales oficiales de seguridad del Estado de Hidalgo para contraloría municipal.
+                        </p>
+                      </div>
+
+                      {exportingReport ? (
+                        <div className="p-4 bg-slate-950/60 rounded-xl border border-white/5 text-center space-y-3">
+                          <span className="inline-block w-6 h-6 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin mx-auto" />
+                          <div className="text-[11px] text-emerald-400 font-bold">Firmando digitalmente reporte de Contraloría...</div>
+                          <div className="text-[8px] text-slate-500 font-mono">Calculando sumas de verificación SHA-256...</div>
+                        </div>
+                      ) : exportedReportUrl ? (
+                        <div className="p-3.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl space-y-3">
+                          <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
+                            <ShieldCheck className="w-4 h-4" />
+                            <span>REPORTE GENERADO CON ÉXITO</span>
+                          </div>
+                          
+                          <div className="text-[8.5px] font-mono text-slate-400 bg-[#030712] p-2 rounded-lg break-all space-y-0.5 border border-white/[0.03]">
+                            <div className="text-[8px] text-emerald-400 font-bold">HASH DE VALIDEZ MUNICIPAL:</div>
+                            <div>SHA256: 8f2c001db78a9466e13ca2ef7091104e1bc29</div>
+                            <div>EMISOR: C5i_HIDALGO_AUDIT</div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-[9.5px]">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                // Simulate CSV download trigger
+                                const csvContent = "data:text/csv;charset=utf-8,KPI,Valor\nReactionTime,1m 18s\nArrivalTime,4m 05s\nActivePatrols,3\nEffectiveness,94.5%\n";
+                                const encodedUri = encodeURI(csvContent);
+                                const link = document.createElement("a");
+                                link.setAttribute("href", encodedUri);
+                                link.setAttribute("download", "C5i_Hidalgo_KPI_Report.csv");
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                setExportedReportUrl(null);
+                              }}
+                              className="py-1.5 bg-slate-900 border border-white/10 hover:bg-slate-800 text-white rounded-lg font-bold text-center cursor-pointer"
+                            >
+                              Descargar Excel / CSV
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                // Simulate mock printing view
+                                window.print();
+                                setExportedReportUrl(null);
+                              }}
+                              className="py-1.5 bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-black rounded-lg text-center cursor-pointer"
+                            >
+                              Imprimir PDF Oficial
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExportingReport(true);
+                              setTimeout(() => {
+                                setExportingReport(false);
+                                setExportedReportUrl('pdf');
+                                addLog({
+                                  time: new Date().toLocaleTimeString(),
+                                  type: 'success',
+                                  message: '📄 [AUDITORÍA MUNICIPAL] Reporte de KPI emitido exitosamente con firma digital en formato PDF.'
+                                });
+                              }, 1600);
+                            }}
+                            className="py-2.5 bg-slate-950 hover:bg-slate-900 border border-white/[0.08] hover:border-white/[0.15] text-white rounded-xl text-[10.5px] font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Generar PDF</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExportingReport(true);
+                              setTimeout(() => {
+                                setExportingReport(false);
+                                setExportedReportUrl('excel');
+                                addLog({
+                                  time: new Date().toLocaleTimeString(),
+                                  type: 'success',
+                                  message: '📊 [AUDITORÍA MUNICIPAL] Archivo de auditoría legal de oficiales exportado en formato Excel.'
+                                });
+                              }, 1600);
+                            }}
+                            className="py-2.5 bg-slate-950 hover:bg-slate-900 border border-white/[0.08] hover:border-white/[0.15] text-white rounded-xl text-[10.5px] font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
+                          >
+                            <Download className="w-3.5 h-3.5 text-blue-400" />
+                            <span>Exportar Excel</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Console system streams */}
-                    <div className="flex-1 overflow-y-auto space-y-2 pr-1 font-mono text-[10px] leading-relaxed select-text scrollbar-thin scrollbar-thumb-white/10">
-                      {logs.map((log, index) => (
-                        <div key={index} className="flex items-start gap-2 text-slate-300">
-                          <span className="text-slate-500 font-bold shrink-0">{log.time}</span>
-                          
-                          {/* Severity log badge */}
-                          <span className={`shrink-0 px-1 rounded text-[7.5px] font-black uppercase ${
-                            log.type === 'error' 
-                              ? 'bg-red-500/10 text-red-400' 
-                              : log.type === 'warning' 
-                                ? 'bg-amber-500/10 text-amber-400' 
-                                : log.type === 'success' 
-                                  ? 'bg-emerald-500/10 text-emerald-400' 
-                                  : 'bg-blue-500/10 text-blue-400'
-                          }`}>
-                            {log.type === 'error' ? 'ALERTA' : log.type === 'warning' ? 'GPS' : log.type === 'success' ? 'ÉXITO' : 'INFO'}
-                          </span>
-                          
-                          <span className="text-slate-200">{log.message}</span>
+                    {/* 5. Control de Permisos y Cuentas de Personal */}
+                    <div className="bg-[#000000]/80 border border-white/[0.08] p-5.5 rounded-[28px] backdrop-blur-md shadow-xl space-y-4">
+                      <div className="border-b border-white/[0.05] pb-3.5">
+                        <h4 className="text-xs font-black text-white flex items-center gap-2">
+                          <Settings className="w-4 h-4 text-emerald-400" />
+                          <span>5. Control de Personal y Permisos C4</span>
+                        </h4>
+                        <p className="text-[9.5px] text-slate-500">Gestión de cuentas de policías operativos y privilegios del sistema</p>
+                      </div>
+
+                      {/* Active catalog of officers */}
+                      <div className="space-y-3.5">
+                        <span className="text-[9px] font-black tracking-widest text-slate-400 uppercase block">CATÁLOGO DE CUENTAS DE POLICÍA</span>
+                        
+                        <div className="max-h-44 overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-white/10">
+                          {c4Units.map((unit) => (
+                            <div key={unit.id} className="bg-slate-950/80 p-2.5 rounded-xl border border-white/[0.02] flex items-center justify-between text-xs">
+                              <div>
+                                <span className="font-bold text-white text-[11px] block">{unit.officer}</span>
+                                <div className="flex items-center gap-1.5 text-[8.5px] text-slate-400 font-mono mt-0.5">
+                                  <span>Placa: {unit.id}</span>
+                                  <span>•</span>
+                                  <span>Unidad: {unit.name}</span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[8px] font-black tracking-wide uppercase px-1.5 py-0.5 rounded ${
+                                  unit.status === 'Activo' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800 text-slate-500'
+                                }`}>
+                                  {unit.status}
+                                </span>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setC4Units(prev => prev.map(u => u.id === unit.id ? { ...u, status: u.status === 'Activo' ? 'Inactivo' : 'Activo' } : u));
+                                    addLog({
+                                      time: new Date().toLocaleTimeString(),
+                                      type: 'warning',
+                                      message: `👥 [CATÁLOGO] Se modificó el estatus operativo del oficial ${unit.officer} (${unit.id}) a: ${unit.status === 'Activo' ? 'Inactivo' : 'Activo'}.`
+                                    });
+                                  }}
+                                  className="text-[9px] font-bold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 p-1 px-2 rounded cursor-pointer"
+                                >
+                                  {unit.status === 'Activo' ? 'Suspender' : 'Reactivar'}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setC4Units(prev => prev.filter(u => u.id !== unit.id));
+                                    addLog({
+                                      time: new Date().toLocaleTimeString(),
+                                      type: 'error',
+                                      message: `❌ [CATÁLOGO] Baja directa de oficial en el sistema: ${unit.officer} (${unit.id}) eliminado de la base de despacho.`
+                                    });
+                                  }}
+                                  className="text-[9px] font-black text-red-400 hover:text-red-300 bg-red-500/5 hover:bg-red-500/15 p-1 rounded cursor-pointer"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+
+                        {/* Add new officer form */}
+                        <div className="bg-[#030712] p-3 rounded-xl border border-white/[0.03] space-y-2.5">
+                          <span className="text-[9px] font-black tracking-wider text-slate-400 uppercase block">DAR DE ALTA NUEVO OFICIAL</span>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <input 
+                              type="text" 
+                              placeholder="Nombre Oficial..."
+                              value={newOfficerName}
+                              onChange={(e) => setNewOfficerName(e.target.value)}
+                              className="w-full bg-slate-900 border border-white/5 text-slate-200 placeholder-slate-600 rounded-lg p-1.5 text-[10px] outline-none focus:border-emerald-500/20"
+                            />
+                            <input 
+                              type="text" 
+                              placeholder="Identificador (ej. Hidalgo-22)..."
+                              value={newOfficerUnit}
+                              onChange={(e) => setNewOfficerUnit(e.target.value)}
+                              className="w-full bg-slate-900 border border-white/5 text-slate-200 placeholder-slate-600 rounded-lg p-1.5 text-[10px] outline-none focus:border-emerald-500/20"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={!newOfficerName.trim() || !newOfficerUnit.trim()}
+                            onClick={() => {
+                              const newId = `U-${Math.floor(Math.random() * 90 + 10)}`;
+                              setC4Units(prev => [
+                                ...prev,
+                                {
+                                  id: newId,
+                                  name: `Patrulla ${newOfficerUnit}`,
+                                  lat: 20.098,
+                                  lng: -98.76,
+                                  status: 'Activo',
+                                  officer: newOfficerName,
+                                  signal: 'Excelente',
+                                  type: 'Despacho Manual'
+                                }
+                              ]);
+                              addLog({
+                                time: new Date().toLocaleTimeString(),
+                                type: 'success',
+                                  message: `👤 [CATÁLOGO] Se ha dado de alta al ${newOfficerName} con unidad ${newOfficerUnit} en el sistema central.`
+                              });
+                              setNewOfficerName('');
+                              setNewOfficerUnit('');
+                            }}
+                            className={`w-full py-1.5 rounded-lg text-[10px] font-black flex items-center justify-center gap-1 cursor-pointer ${
+                              (!newOfficerName.trim() || !newOfficerUnit.trim())
+                                ? 'bg-white/5 text-slate-500 cursor-not-allowed'
+                                : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black'
+                            }`}
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            <span>Dar de Alta en C5i</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Permissions checklist for dispatchers */}
+                      <div className="border-t border-white/[0.04] pt-3.5 space-y-2.5">
+                        <span className="text-[9px] font-black tracking-widest text-slate-400 uppercase block">GESTIÓN DE PRIVILEGIOS DE DESPACHADOR</span>
+                        
+                        <div className="space-y-1.5 text-xs text-slate-300 font-medium">
+                          <label className="flex items-center gap-2 select-none cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={c4Permissions.manualDispatchNoGeofence}
+                              onChange={(e) => {
+                                setC4Permissions(prev => ({ ...prev, manualDispatchNoGeofence: e.target.checked }));
+                                addLog({
+                                  time: new Date().toLocaleTimeString(),
+                                  type: 'info',
+                                  message: `🔒 [PERMISOS C4] Se ${e.target.checked ? 'habilitó' : 'deshabilitó'} el despacho manual sin validación de geocerca.`
+                                });
+                              }}
+                              className="rounded accent-emerald-500 w-3.5 h-3.5 cursor-pointer" 
+                            />
+                            <span>Permitir Despacho Manual Sin Geocerca</span>
+                          </label>
+
+                          <label className="flex items-center gap-2 select-none cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={c4Permissions.directSatelitalIntervention}
+                              onChange={(e) => {
+                                setC4Permissions(prev => ({ ...prev, directSatelitalIntervention: e.target.checked }));
+                                addLog({
+                                  time: new Date().toLocaleTimeString(),
+                                  type: 'info',
+                                  message: `🔒 [PERMISOS C4] Se ${e.target.checked ? 'habilitó' : 'deshabilitó'} la intervención remota de Caja Negra.`
+                                });
+                              }}
+                              className="rounded accent-emerald-500 w-3.5 h-3.5 cursor-pointer" 
+                            />
+                            <span>Habilitar Intervención Satelital Directa (Micrófono/Cámara)</span>
+                          </label>
+
+                          <label className="flex items-center gap-2 select-none cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={c4Permissions.editLegalBitacora}
+                              onChange={(e) => {
+                                setC4Permissions(prev => ({ ...prev, editLegalBitacora: e.target.checked }));
+                                addLog({
+                                  time: new Date().toLocaleTimeString(),
+                                  type: 'info',
+                                  message: `🔒 [PERMISOS C4] Se ${e.target.checked ? 'habilitó' : 'deshabilitó'} la modificación de bitácora legal.`
+                                });
+                              }}
+                              className="rounded accent-emerald-500 w-3.5 h-3.5 cursor-pointer" 
+                            />
+                            <span>Permitir Modificación de Bitácora Legal (Auditoría)</span>
+                          </label>
+                        </div>
+                      </div>
+
                     </div>
+
                   </div>
 
                 </div>
+
+                {/* CENTRAL TELEMETRY TERMINAL SIDEBAR */}
+                <div className="bg-[#000000]/80 border border-white/[0.08] p-5.5 rounded-3xl backdrop-blur-md shadow-xl flex flex-col h-72">
+                  <div className="border-b border-white/[0.05] pb-3 mb-3.5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
+                      <h4 className="text-[10px] font-black tracking-wider text-slate-400 uppercase">BITÁCORA FEDERAL INTEGRADA C5i HIDALGO (AUDITORÍA OFICIAL)</h4>
+                    </div>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  </div>
+
+                  {/* Console system streams */}
+                  <div className="flex-1 overflow-y-auto space-y-2 pr-1 font-mono text-[10px] leading-relaxed select-text scrollbar-thin scrollbar-thumb-white/10">
+                    {logs.map((log, index) => (
+                      <div key={index} className="flex items-start gap-2 text-slate-300">
+                        <span className="text-slate-500 font-bold shrink-0">{log.time}</span>
+                        
+                        {/* Severity log badge */}
+                        <span className={`shrink-0 px-1 rounded text-[7.5px] font-black uppercase ${
+                          log.type === 'error' 
+                            ? 'bg-red-500/10 text-red-400' 
+                            : log.type === 'warning' 
+                              ? 'bg-amber-500/10 text-amber-400' 
+                              : log.type === 'success' 
+                                ? 'bg-emerald-500/10 text-emerald-400' 
+                                : 'bg-blue-500/10 text-blue-400'
+                        }`}>
+                          {log.type === 'error' ? 'ALERTA' : log.type === 'warning' ? 'GPS / GEOFENCE' : log.type === 'success' ? 'ÉXITO' : 'INFO'}
+                        </span>
+                        
+                        <span className="text-slate-200">{log.message}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </motion.div>
             )}
 
