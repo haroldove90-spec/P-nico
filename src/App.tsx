@@ -1529,9 +1529,9 @@ export default function App() {
   };
 
   return (
-    <div id="panic_app_root" className="min-h-screen w-full bg-[#030712] text-slate-100 font-sans antialiased relative overflow-x-hidden selection:bg-red-500 selection:text-white flex flex-col justify-between">
+    <div id="panic_app_root" className="min-h-screen w-full bg-[#000000] text-slate-100 font-sans antialiased relative overflow-x-hidden selection:bg-red-500 selection:text-white flex flex-col justify-between">
       {/* Ambient backgrounds */}
-      <div className="absolute inset-0 bg-[#030712] z-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 bg-[#000000] z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[120vw] h-[120vw] rounded-full bg-[radial-gradient(circle,rgba(239,68,68,0.035)_0%,transparent_70%)]" />
         <div className="absolute bottom-0 right-1/4 w-[100vw] h-[100vw] rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.02)_0%,transparent_70%)]" />
         <AnimatePresence>
@@ -1621,7 +1621,7 @@ export default function App() {
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="w-full bg-[#070c1b]/60 border border-white/[0.08] backdrop-blur-xl p-8 rounded-[28px] shadow-[0_24px_50px_rgba(0,0,0,0.6)] space-y-6 text-center"
+              className="w-full bg-[#000000]/60 border border-white/[0.08] backdrop-blur-xl p-8 rounded-[28px] shadow-[0_24px_50px_rgba(0,0,0,0.6)] space-y-6 text-center"
             >
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-red-500/10 border border-red-500/20 text-red-500 mb-2">
                 <Shield className="w-8 h-8 animate-pulse" />
@@ -1702,7 +1702,7 @@ export default function App() {
                 className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start w-full"
               >
                 {/* LEFT CORE: SOS BUTTON TRIGGER */}
-                <div className="md:col-span-6 bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] p-8 rounded-[28px] backdrop-blur-md shadow-xl flex flex-col items-center justify-center min-h-[460px] relative overflow-hidden">
+                <div className="md:col-span-6 bg-[#000000]/80 border border-white/[0.08] p-8 rounded-[28px] backdrop-blur-md shadow-xl flex flex-col items-center justify-center min-h-[460px] relative overflow-hidden">
                   
                   {/* Realtime GPS Satelital telemetry */}
                   <div className="absolute top-4 left-6 right-6 flex items-center justify-between">
@@ -1786,7 +1786,7 @@ export default function App() {
                 <div className="md:col-span-6 space-y-6">
                   
                   {/* service 1: Acompáñame Live escort */}
-                  <div className="bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-lg space-y-4">
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-lg space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
@@ -1840,7 +1840,7 @@ export default function App() {
                   </div>
 
                   {/* service 2: Trusted Circles & Contacts Manager */}
-                  <div className="bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-lg space-y-5">
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-lg space-y-5">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-sm font-bold text-white">Contactos de Confianza (Enlaces)</h3>
@@ -1913,7 +1913,7 @@ export default function App() {
                           <div className="flex sm:flex-col items-center gap-2.5 text-left sm:text-center">
                             <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center relative">
                               <span className="text-xs font-black text-red-400">{contact.initials}</span>
-                              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-[#030712]" />
+                              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-[#000000]" />
                             </div>
                             <div>
                               <div className="text-xs font-bold text-white">{contact.name}</div>
@@ -1940,7 +1940,7 @@ export default function App() {
                 className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start w-full"
               >
                 {/* LEFT CORE: DISPATCH NOTIFICATION & GPS GPS NAVEGADOR */}
-                <div className="md:col-span-7 bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-xl space-y-6">
+                <div className="md:col-span-7 bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-xl space-y-6">
                   
                   {/* Officer active duty status header */}
                   <div className="bg-slate-900/40 border border-white/[0.05] p-4 rounded-2xl flex items-center justify-between">
@@ -2050,7 +2050,7 @@ export default function App() {
                 </div>
 
                 {/* RIGHT CORE: CASE RESOLUTION & TECHNICAL REPORTS */}
-                <div className="md:col-span-5 bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-xl space-y-5">
+                <div className="md:col-span-5 bg-[#000000]/80 border border-white/[0.08] p-6 rounded-[28px] backdrop-blur-md shadow-xl space-y-5">
                   <div className="space-y-1.5 border-b border-white/[0.05] pb-4">
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
                       <FileText className="w-4 h-4 text-emerald-400" />
@@ -2120,7 +2120,7 @@ export default function App() {
                 {/* TOP METRICS KPI BAR */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {/* KPI 1 */}
-                  <div className="bg-gradient-to-r from-[#0d152a]/60 to-[#070c1b]/60 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4.5 backdrop-blur-md">
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4.5 backdrop-blur-md">
                     <div className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
                       <Clock className="w-5 h-5" />
                     </div>
@@ -2131,7 +2131,7 @@ export default function App() {
                   </div>
 
                   {/* KPI 2 */}
-                  <div className="bg-gradient-to-r from-[#0d152a]/60 to-[#070c1b]/60 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4.5 backdrop-blur-md">
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4.5 backdrop-blur-md">
                     <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                       <TrendingUp className="w-5 h-5" />
                     </div>
@@ -2142,7 +2142,7 @@ export default function App() {
                   </div>
 
                   {/* KPI 3 */}
-                  <div className="bg-gradient-to-r from-[#0d152a]/60 to-[#070c1b]/60 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4.5 backdrop-blur-md">
+                  <div className="bg-[#000000]/80 border border-white/[0.08] p-4.5 rounded-2xl flex items-center gap-4.5 backdrop-blur-md">
                     <div className="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                       <Activity className="w-5 h-5" />
                     </div>
@@ -2157,7 +2157,7 @@ export default function App() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   
                   {/* COLA 1: LIVE TACTICAL SITUATION MAP */}
-                  <div className="lg:col-span-8 bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] rounded-3xl overflow-hidden backdrop-blur-md shadow-xl flex flex-col min-h-[420px]">
+                  <div className="lg:col-span-8 bg-[#000000]/80 border border-white/[0.08] rounded-3xl overflow-hidden backdrop-blur-md shadow-xl flex flex-col min-h-[420px]">
                     
                     {/* Header bar of map */}
                     <div className="bg-slate-900/60 border-b border-white/[0.05] px-5 py-3.5 flex items-center justify-between">
@@ -2171,7 +2171,7 @@ export default function App() {
                     </div>
 
                     {/* Styled Tacti-Map Area */}
-                    <div className="flex-1 h-80 relative bg-[#050914] flex flex-col justify-between p-4 border-b border-white/[0.02]">
+                    <div className="flex-1 h-80 relative bg-[#000000] flex flex-col justify-between p-4 border-b border-white/[0.02]">
                       {/* Grid Radar overlay lines */}
                       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
                       
@@ -2246,7 +2246,7 @@ export default function App() {
                   </div>
 
                   {/* COLA 2: SYSTEM LOGS TERMINAL FEED */}
-                  <div className="lg:col-span-4 bg-gradient-to-b from-[#0e1630]/60 to-[#070c1b]/60 border border-white/[0.08] p-5 rounded-3xl backdrop-blur-md shadow-xl flex flex-col h-[420px]">
+                  <div className="lg:col-span-4 bg-[#000000]/80 border border-white/[0.08] p-5 rounded-3xl backdrop-blur-md shadow-xl flex flex-col h-[420px]">
                     <div className="border-b border-white/[0.05] pb-3 mb-3.5 flex items-center justify-between">
                       <h4 className="text-[10px] font-black tracking-wider text-slate-400 uppercase">TELEMETRÍA EN VIVO (C5i)</h4>
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
