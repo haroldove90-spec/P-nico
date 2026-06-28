@@ -11,7 +11,7 @@ import {
   SafeAreaView
 } from 'react-native';
 // Usamos Lucide para React Native si está disponible, o iconos nativos de Expo
-import { Shield, ShieldAlert, Navigation, Phone, Users, ChevronRight, Eye } from 'lucide-react-native';
+import { ShieldAlert, Navigation, Users } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -59,8 +59,6 @@ export default function PanicScreen() {
     let timer: NodeJS.Timeout;
     if (isActive && countdown > 0) {
       timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    } else if (isActive && countdown === 0) {
-      // Alerta enviada con éxito al C4 Hidalgo
     }
     return () => clearTimeout(timer);
   }, [isActive, countdown]);
@@ -90,12 +88,12 @@ export default function PanicScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
       
-      {/* Fondo con degradado simulado */}
+      {/* Fondo con degradado ambiental premium */}
       <View style={styles.backgroundGradient} />
 
-      {/* HEADER / INDICADOR DE ESTADO MINIMALISTA */}
+      {/* HEADER / INDICADOR DE ESTADO EN VERDE NEÓN */}
       <View style={styles.header}>
-        <View style={styles.statusIndicator}>
+        <View style={styles.protectedBadge}>
           {/* Icono GPS latiendo / radar */}
           <View style={styles.gpsContainer}>
             <Animated.View 
@@ -104,138 +102,116 @@ export default function PanicScreen() {
                 { transform: [{ scale: radarScale }], opacity: radarOpacity }
               ]} 
             />
-            <View style={[styles.gpsDot, isActive && styles.gpsDotAlert]} />
+            <View style={[styles.pulse, isActive && styles.pulseAlert]} />
           </View>
           
-          <Text style={styles.statusText}>
-            Estado: <Text style={isActive ? styles.statusAlertHighlight : styles.statusSuccessHighlight}>
-              {isActive ? `ALERTA ENVIADA (${countdown}s)` : 'Protegido'}
-            </Text>
+          <Text style={[styles.protectedText, isActive && styles.protectedTextAlert]}>
+            {isActive ? `SISTEMA ALERTA ACTIVA (${countdown}s)` : 'ESTADO: PROTEGIDO'}
           </Text>
         </View>
-        <Text style={styles.locationSubtitle}>Pachuca de Soto, Hidalgo</Text>
+        <Text style={styles.locationSubtitle}>Hidalgo, MX • GPS Activo</Text>
       </View>
 
-      {/* BOTÓN DE PÁNICO CENTRAL */}
-      <View style={styles.centerContainer}>
+      {/* BOTÓN DE PÁNICO CENTRAL DE ALTO IMPACTO (SOS) */}
+      <View style={styles.panicSection}>
+        {/* Glow exterior de respiración */}
+        <Animated.View style={[
+          styles.panicGlow,
+          isActive ? styles.panicGlowAlert : styles.panicGlowNormal,
+          { transform: [{ scale: pulseAnim }] }
+        ]} />
+
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
           <TouchableOpacity 
             activeOpacity={0.85} 
             onPress={handlePanicPress}
             style={[
-              styles.panicButtonOuter,
-              isActive ? styles.panicButtonAlertOuter : styles.panicButtonNormalOuter
+              styles.panicButton,
+              isActive ? styles.panicButtonAlert : styles.panicButtonNormal
             ]}
           >
-            <View style={[
-              styles.panicButtonInner,
-              isActive ? styles.panicButtonAlertInner : styles.panicButtonNormalInner
-            ]}>
-              {isActive ? (
-                <ShieldAlert size={56} color="#FFFFFF" strokeWidth={2} />
-              ) : (
-                <Shield size={56} color="#FFFFFF" strokeWidth={2} />
-              )}
-              
-              <Text style={styles.panicButtonText}>
-                {isActive ? 'CANCELAR' : 'PÁNICO'}
-              </Text>
-              
-              <Text style={styles.panicButtonSubtext}>
-                {isActive ? 'Mantén presionado' : 'Presiona 3 seg o doble toque'}
-              </Text>
-            </View>
+            {isActive ? (
+              <ShieldAlert size={48} color="#FFFFFF" strokeWidth={2.5} style={{ marginBottom: 4 }} />
+            ) : (
+              <Text style={styles.panicButtonText}>S.O.S.</Text>
+            )}
+            
+            <Text style={styles.panicButtonSubtext}>
+              {isActive ? 'CANCELAR' : 'PRESIONAR'}
+            </Text>
           </TouchableOpacity>
         </Animated.View>
-        
-        {/* Glow exterior dinámico */}
-        <View style={[
-          styles.glowShadow,
-          isActive ? styles.glowShadowAlert : styles.glowShadowNormal
-        ]} />
       </View>
 
-      {/* TARJETA FLOTANTE INFERIOR */}
-      <View style={styles.bottomCard}>
+      {/* TARJETA DE ACCIONES INFERIOR INTEGRADA */}
+      <View style={styles.bottomSection}>
+        
         {/* Sección "Acompáñame" */}
-        <View style={styles.companionSection}>
-          <View style={styles.companionHeader}>
-            <View style={styles.companionTitleContainer}>
-              <View style={styles.companionIconBox}>
-                <Navigation size={20} color="#ff2a5f" />
-              </View>
-              <View>
-                <Text style={styles.companionTitle}>Acompáñame</Text>
-                <Text style={styles.companionSubtitle}>Monitoreo en tiempo real de tu ruta</Text>
-              </View>
-            </View>
-            
-            {/* Toggle Switch Moderno */}
-            <TouchableOpacity 
-              activeOpacity={0.9}
-              onPress={() => setIsCompanionActive(!isCompanionActive)}
-              style={[
-                styles.toggleContainer, 
-                isCompanionActive ? styles.toggleActive : styles.toggleInactive
-              ]}
-            >
-              <View style={[
-                styles.toggleCircle,
-                isCompanionActive ? styles.toggleCircleActive : styles.toggleCircleInactive
-              ]} />
-            </TouchableOpacity>
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.label}>Acompáñame</Text>
+            <Text style={[styles.statusToggleText, isCompanionActive && styles.statusToggleTextActive]}>
+              {isCompanionActive ? 'ON' : 'OFF'}
+            </Text>
           </View>
+          
+          {/* Slider Track Deslizable simulado con toggle táctil */}
+          <TouchableOpacity 
+            activeOpacity={0.9}
+            onPress={() => setIsCompanionActive(!isCompanionActive)}
+            style={styles.sliderTrack}
+          >
+            <Animated.View style={[
+              styles.sliderHandle,
+              isCompanionActive ? styles.sliderHandleActive : styles.sliderHandleInactive
+            ]}>
+              <Navigation size={16} color="#000000" />
+            </Animated.View>
+            <Text style={styles.sliderText}>
+              {isCompanionActive ? 'Ruta activa monitoreada' : 'Desliza para monitoreo real'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.divider} />
-
         {/* Sección "Contactos Seguros" */}
-        <View style={styles.contactsSection}>
-          <Text style={styles.sectionTitle}>Contactos de Confianza</Text>
+        <View style={styles.card}>
+          <Text style={styles.label}>Contactos Seguros</Text>
+          
           <View style={styles.contactsRow}>
-            {/* Contacto 1 */}
-            <View style={styles.contactItem}>
-              <View style={styles.avatarContainer}>
-                <Text style={styles.avatarText}>MÁ</Text>
-                <View style={styles.activeContactDot} />
-              </View>
-              <Text style={styles.contactName} numberOfLines={1}>Mamá</Text>
+            {/* Contacto 1: Mamá Papá */}
+            <View style={[styles.contactCircle, { backgroundColor: '#FF9500' }]}>
+              <Text style={styles.contactInitials}>MP</Text>
             </View>
 
-            {/* Contacto 2 */}
-            <View style={styles.contactItem}>
-              <View style={styles.avatarContainer}>
-                <Text style={styles.avatarText}>PA</Text>
-                <View style={styles.activeContactDot} />
-              </View>
-              <Text style={styles.contactName} numberOfLines={1}>Papá</Text>
+            {/* Contacto 2: Rosa Julia */}
+            <View style={[styles.contactCircle, { backgroundColor: '#5856D6' }]}>
+              <Text style={styles.contactInitials}>RJ</Text>
             </View>
 
-            {/* Contacto 3 */}
-            <View style={styles.contactItem}>
-              <View style={styles.avatarContainer}>
-                <Text style={styles.avatarText}>ES</Text>
-                <View style={styles.activeContactDot} />
-              </View>
-              <Text style={styles.contactName} numberOfLines={1}>Esposa</Text>
+            {/* Contacto 3: Alerta de confianza */}
+            <View style={[styles.contactCircle, { backgroundColor: '#FF2D55' }]}>
+              <Text style={styles.contactInitials}>AL</Text>
             </View>
 
             {/* Botón Añadir Contacto */}
-            <TouchableOpacity style={styles.addContactButton} activeOpacity={0.7}>
-              <Users size={20} color="#9ca3af" />
-              <Text style={styles.addContactText}>Gestionar</Text>
+            <TouchableOpacity style={styles.addContactCircle} activeOpacity={0.7}>
+              <Users size={20} color="rgba(255, 255, 255, 0.4)" />
             </TouchableOpacity>
           </View>
         </View>
+
       </View>
     </SafeAreaView>
   );
 }
 
+// Cálculo del tamaño responsivo del botón central basándose en el ancho de la pantalla
+const buttonSize = Math.min(width * 0.55, 220);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#08090c',
+    backgroundColor: '#080808',
   },
   backgroundGradient: {
     position: 'absolute',
@@ -243,284 +219,238 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#08090c',
-    // En un proyecto real de RN, usarías <LinearGradient> de expo-linear-gradient
-    // Simulado aquí con un color de fondo base oscuro y un overlay estilizado
+    backgroundColor: '#080808',
   },
   header: {
     alignItems: 'center',
-    marginTop: height * 0.05,
+    marginTop: height * 0.03,
     paddingHorizontal: 24,
   },
-  statusIndicator: {
+  protectedBadge: {
+    backgroundColor: 'rgba(0, 255, 136, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 255, 136, 0.3)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 100,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(19, 21, 26, 0.75)',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 99,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    gap: 8,
   },
   gpsContainer: {
     width: 14,
     height: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
   },
-  gpsDot: {
+  pulse: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#10b981', // Verde de protección
+    backgroundColor: '#00FF88',
+    shadowColor: '#00FF88',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
   },
-  gpsDotAlert: {
-    backgroundColor: '#ff2a5f', // Rojo de alerta
+  pulseAlert: {
+    backgroundColor: '#FF3B30',
+    shadowColor: '#FF3B30',
   },
   radarWave: {
     position: 'absolute',
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: 'rgba(16, 185, 129, 0.4)',
+    backgroundColor: 'rgba(0, 255, 136, 0.4)',
   },
-  statusText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-  statusSuccessHighlight: {
-    color: '#10b981',
+  protectedText: {
+    color: '#00FF88',
     fontWeight: '700',
+    fontSize: 14,
+    letterSpacing: 0.5,
   },
-  statusAlertHighlight: {
-    color: '#ff2a5f',
-    fontWeight: '700',
+  protectedTextAlert: {
+    color: '#FF3B30',
   },
   locationSubtitle: {
-    color: '#9ca3af',
+    color: 'rgba(255, 255, 255, 0.4)',
     fontSize: 12,
-    marginTop: 6,
+    marginTop: 8,
+    fontWeight: '500',
     letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
-  centerContainer: {
+  panicSection: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
-  panicButtonOuter: {
-    width: width * 0.62,
-    height: width * 0.62,
-    borderRadius: (width * 0.62) / 2,
-    padding: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 2,
-  },
-  panicButtonNormalOuter: {
-    backgroundColor: 'rgba(255, 42, 95, 0.08)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 42, 95, 0.25)',
-  },
-  panicButtonAlertOuter: {
-    backgroundColor: 'rgba(255, 94, 58, 0.15)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 94, 58, 0.4)',
-  },
-  panicButtonInner: {
-    width: '100%',
-    height: '100%',
-    borderRadius: (width * 0.57) / 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-  },
-  panicButtonNormalInner: {
-    backgroundColor: '#ff2a5f', // Rojo neón vibrante base
-  },
-  panicButtonAlertInner: {
-    backgroundColor: '#ff3a30', // Rojo de alerta activa continuo
-  },
-  panicButtonText: {
-    color: '#ffffff',
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-    marginTop: 12,
-  },
-  panicButtonSubtext: {
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontSize: 11,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    marginTop: 6,
-  },
-  glowShadow: {
+  panicGlow: {
     position: 'absolute',
-    width: width * 0.58,
-    height: width * 0.58,
-    borderRadius: (width * 0.58) / 2,
-    zIndex: 1,
-    opacity: 0.5,
+    width: buttonSize * 1.4,
+    height: buttonSize * 1.4,
+    borderRadius: (buttonSize * 1.4) / 2,
   },
-  glowShadowNormal: {
-    backgroundColor: '#ff2a5f',
-    shadowColor: '#ff2a5f',
-    shadowOffset: { width: 0, height: 0 },
+  panicGlowNormal: {
+    backgroundColor: 'rgba(255, 59, 48, 0.08)',
+  },
+  panicGlowAlert: {
+    backgroundColor: 'rgba(255, 59, 48, 0.25)',
+  },
+  panicButton: {
+    width: buttonSize,
+    height: buttonSize,
+    borderRadius: buttonSize / 2,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 4,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    elevation: 12,
+  },
+  panicButtonNormal: {
+    backgroundColor: '#FF3B30',
+    shadowColor: '#FF3B30',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.6,
+    shadowRadius: 30,
+  },
+  panicButtonAlert: {
+    backgroundColor: '#D0021B',
+    shadowColor: '#D0021B',
+    shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.8,
     shadowRadius: 40,
   },
-  glowShadowAlert: {
-    backgroundColor: '#ff5e3a',
-    shadowColor: '#ff5e3a',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 50,
+  panicButtonText: {
+    fontWeight: '900',
+    fontSize: 48,
+    letterSpacing: -1,
+    color: '#FFFFFF',
   },
-  bottomCard: {
-    backgroundColor: 'rgba(19, 21, 26, 0.85)', // Glassmorphism oscuro
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    padding: 20,
-    marginHorizontal: 16,
-    marginBottom: height * 0.04,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 5,
-  },
-  companionSection: {
-    paddingBottom: 4,
-  },
-  companionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  companionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  companionIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 42, 95, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  companionTitle: {
-    color: '#ffffff',
-    fontSize: 16,
+  panicButtonSubtext: {
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginTop: -4,
+    opacity: 0.8,
+    color: '#FFFFFF',
     fontWeight: '700',
   },
-  companionSubtitle: {
-    color: '#9ca3af',
-    fontSize: 11,
-    marginTop: 2,
+  bottomSection: {
+    padding: 24,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderTopWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingBottom: height * 0.05,
   },
-  toggleContainer: {
-    width: 50,
-    height: 28,
-    borderRadius: 14,
-    padding: 3,
-    justifyContent: 'center',
-  },
-  toggleActive: {
-    backgroundColor: '#10b981',
-  },
-  toggleInactive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  toggleCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#ffffff',
-  },
-  toggleCircleActive: {
-    alignSelf: 'flex-end',
-  },
-  toggleCircleInactive: {
-    alignSelf: 'flex-start',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    marginVertical: 16,
-  },
-  contactsSection: {},
-  sectionTitle: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  contactsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  contactItem: {
-    alignItems: 'center',
-    width: 60,
-  },
-  avatarContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  card: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
+    borderRadius: 24,
+    padding: 16,
   },
-  avatarText: {
-    color: '#ffffff',
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  label: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontWeight: '700',
+  },
+  statusToggleText: {
+    color: 'rgba(255, 255, 255, 0.3)',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  statusToggleTextActive: {
+    color: '#00FF88',
+  },
+  sliderTrack: {
+    height: 48,
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 4,
+    position: 'relative',
+    marginTop: 8,
+  },
+  sliderHandle: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  sliderHandleActive: {
+    alignSelf: 'flex-end',
+    marginLeft: 'auto',
+  },
+  sliderHandleInactive: {
+    alignSelf: 'flex-start',
+  },
+  sliderText: {
+    position: 'absolute',
+    width: '100%',
+    textAlign: 'center',
     fontSize: 13,
     fontWeight: '600',
+    opacity: 0.4,
+    color: '#FFFFFF',
+    pointerEvents: 'none',
   },
-  activeContactDot: {
-    position: 'absolute',
-    bottom: 1,
-    right: 1,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#10b981',
-    borderWidth: 1.5,
-    borderColor: '#13151a',
+  contactsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
   },
-  contactName: {
-    color: '#9ca3af',
-    fontSize: 11,
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  addContactButton: {
+  contactCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 68,
-    height: 68,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    borderStyle: 'dashed',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  addContactText: {
-    color: '#9ca3af',
-    fontSize: 10,
-    marginTop: 4,
-    textAlign: 'center',
+  contactInitials: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  addContactCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderStyle: 'dashed',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
